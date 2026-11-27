@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UNSTUCK - مستعرض قاعدة البيانات</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --border: #334155;
+            --primary: #be123c;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 30px 20px;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 20px;
+            margin-bottom: 25px;
+        }
+        .header h1 { font-size: 26px; color: #fff; display: flex; align-items: center; gap: 10px; }
+        .tabs { display: flex; gap: 12px; margin-bottom: 25px; }
+        .tab-btn {
+            background: #1e293b;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            padding: 10px 22px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+        .tab-btn.active {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .table-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            margin-bottom: 25px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #243248;
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+        .table-name { font-size: 18px; font-weight: bold; color: #fff; margin-left: 10px; }
+        .badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .badge-count { background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid #10b981; }
+        .badge-cols { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
+        .table-scroll { overflow-x: auto; max-height: 400px; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: right;
+            font-size: 13px;
+        }
+        th {
+            background: #162032;
+            color: #e2e8f0;
+            padding: 12px 14px;
+            border-bottom: 2px solid var(--border);
+            white-space: nowrap;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        td {
+            padding: 10px 14px;
+            border-bottom: 1px solid #2d3d54;
+            color: #cbd5e1;
+            white-space: nowrap;
+            max-width: 320px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        tr:hover td { background: #28374d; }
+        .error-box {
+            background: #451a24;
+            color: #f87171;
+            border: 1px solid #b91c1c;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🐘 مستعرض جداول وقواعد بيانات UNSTUCK</h1>
+            <div style="font-size: 13px; color: var(--text-muted);">تم التحديث: 2026-11-24 06:08 PM</div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="showTab('pg')">🐘 PostgreSQL (Local Port 5432)</button>
+            <button class="tab-btn" onclick="showTab('sq')">📁 SQLite (unstuck_auth.db)</button>
+        </div>
+
+        <div id="tab-pg" class="tab-content active">
+            
+        <div class="table-card" id="pg_otp_verifications">
+            <div class="table-header">
+                <div>
+                    <span class="table-name">📁 otp_verifications</span>
+                    <span class="badge badge-cols">9 أعمدة</span>
+                </div>
+                <div class="badge badge-count">📊 1 صفوف (Rows)</div>
+            </div>
+            <div class="table-scroll">
+                <table>
+                    <thead><tr><th>id<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>integer</span></th><th>email<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>character varying</span></th><th>otp_hash<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>character varying</span></th><th>attempts<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>integer</span></th><th>max_attempts<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>integer</span></th><th>is_used<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>boolean</span></th><th>expires_at<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>timestamp with time zone</span></th><th>last_sent_at<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>timestamp with time zone</span></th><th>created_at<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>timestamp with time zone</span></th></tr></thead>
+                    <tbody><tr><td title='33'>33</td><td title='hanfyaya42@gmail.com'>hanfyaya42@gmail.com</td><td title='b821dcc1c47c297c12b6936ff8231e4e516433e53f46fe407b33d5d452137765'>b821dcc1c47c297c12b6936ff8231e4e516433e53f46fe407b33d5d452137765</td><td title='4'>4</td><td title='5'>5</td><td title='True'>True</td><td title='2026-11-24T18:00:02.470743+02:00'>2026-11-24T18:00:02.470743+02:00</td><td title='2026-11-24T17:55:02.470743+02:00'>2026-11-24T17:55:02.470743+02:00</td><td title='2026-11-24T17:55:02.641749+02:00'>2026-11-24T17:55:02.641749+02:00</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="table-card" id="pg_profiles">
+            <div class="table-header">
+                <div>
+                    <span class="table-name">📁 profiles</span>
+                    <span class="badge badge-cols">17 أعمدة</span>
+                </div>
+                <div class="badge badge-count">📊 6 صفوف (Rows)</div>
+            </div>
+            <div class="table-scroll">
+                <table>
+                    <thead><tr><th>id<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>integer</span></th><th>email<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>character varying</span></th><th>full_name<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>character varying</span></th><th>title<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>character varying</span></th><th>experience_level<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>character varying</span></th><th>summary<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>text</span></th><th>skills<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>jsonb</span></th><th>cv_url<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>text</span></th><th>alert_threshold<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>integer</span></th><th>applied_jobs_count<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>integer</span></th><th>proposals_count<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>integer</span></th><th>skills_score<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>integer</span></th><th>applied_score<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>integer</span></th><th>total_score<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>integer</span></th><th>badge<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>character varying</span></th><th>created_at<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>timestamp with time zone</span></th><th>updated_at<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>timestamp with time zone</span></th></tr></thead>
+                    <tbody><tr><td title='7'>7</td><td title='ayaabdelfadel2007@gmail.com'>ayaabdelfadel2007@gmail.com</td><td title='aya'>aya</td><td title='UI/UX Designer & Product Specialist'>UI/UX Designer & Product Specialist</td><td title='Senior (5+ Years)'>Senior (5+ Years)</td><td title='Experienced UI/UX Designer & Product Specialist with skills in Python, C++, Dart, REST, Firebase.'>Experienced UI/UX Designer & Product Specialist with skills in Python, C++, Dart...</td><td title='["Python", "C++", "Dart", "REST", "Firebase", "Git", "GitHub", "Flutter", "Android"]'>["Python", "C++", "Dart", "REST", "Firebase", "Git", "GitHub", "Flutter", "Andro...</td><td title=''></td><td title='75'>75</td><td title='0'>0</td><td title='0'>0</td><td title='155'>155</td><td title='0'>0</td><td title='155'>155</td><td title='🚀 Rising Star'>🚀 Rising Star</td><td title='2026-11-21T03:38:55.366505+02:00'>2026-11-21T03:38:55.366505+02:00</td><td title='2026-11-21T03:38:55.366505+02:00'>2026-11-21T03:38:55.366505+02:00</td></tr><tr><td title='6'>6</td><td title='am3365568@gmail.com'>am3365568@gmail.com</td><td title='Ahmed Mohamed'>Ahmed Mohamed</td><td title='UI/UX Designer & Product Specialist'>UI/UX Designer & Product Specialist</td><td title='Senior (5+ Years)'>Senior (5+ Years)</td><td title='Experienced UI/UX Designer & Product Specialist with skills in Python, C++, Dart, REST, RESTful APIs.'>Experienced UI/UX Designer & Product Specialist with skills in Python, C++, Dart...</td><td title='["Python", "C++", "Dart", "REST", "RESTful APIs", "Firebase", "Git", "GitHub", "Flutter", "Android"]'>["Python", "C++", "Dart", "REST", "RESTful APIs", "Firebase", "Git", "GitHub", "...</td><td title=''></td><td title='75'>75</td><td title='0'>0</td><td title='1'>1</td><td title='170'>170</td><td title='30'>30</td><td title='200'>200</td><td title='🚀 Rising Star'>🚀 Rising Star</td><td title='2026-11-21T03:31:17.726518+02:00'>2026-11-21T03:31:17.726518+02:00</td><td title='2026-11-21T03:43:00.540439+02:00'>2026-11-21T03:43:00.540439+02:00</td></tr><tr><td title='5'>5</td><td title='audit_tester_1795221264@unstuck.ai'>audit_tester_1795221264@unstuck.ai</td><td title='Freelancer'>Freelancer</td><td title='Full-Stack Specialist'>Full-Stack Specialist</td><td title='Mid-Level'>Mid-Level</td><td title=''></td><td title='["React", "Python", "FastAPI"]'>["React", "Python", "FastAPI"]</td><td title=''></td><td title='75'>75</td><td title='1'>1</td><td title='0'>0</td><td title='75'>75</td><td title='50'>50</td><td title='125'>125</td><td title='🌱 Aspiring Talent'>🌱 Aspiring Talent</td><td title='2026-11-21T02:34:26.518616+02:00'>2026-11-21T02:34:26.518616+02:00</td><td title='2026-11-21T02:34:26.518616+02:00'>2026-11-21T02:34:26.518616+02:00</td></tr><tr><td title='3'>3</td><td title='audit_tester_1795221165@unstuck.ai'>audit_tester_1795221165@unstuck.ai</td><td title='Freelancer'>Freelancer</td><td title='Full-Stack Specialist'>Full-Stack Specialist</td><td title='Mid-Level'>Mid-Level</td><td title=''></td><td title='["React", "Python", "FastAPI"]'>["React", "Python", "FastAPI"]</td><td title=''></td><td title='75'>75</td><td title='1'>1</td><td title='0'>0</td><td title='75'>75</td><td title='50'>50</td><td title='125'>125</td><td title='🌱 Aspiring Talent'>🌱 Aspiring Talent</td><td title='2026-11-21T02:32:54.499273+02:00'>2026-11-21T02:32:54.499273+02:00</td><td title='2026-11-21T02:32:54.499273+02:00'>2026-11-21T02:32:54.499273+02:00</td></tr><tr><td title='2'>2</td><td title='kareem.dev@example.com'>kareem.dev@example.com</td><td title='Kareem Hassan'>Kareem Hassan</td><td title='AI Automation & Full-Stack Developer'>AI Automation & Full-Stack Developer</td><td title='Senior (5+ Years)'>Senior (5+ Years)</td><td title='Experienced AI Automation & Full-Stack Developer with skills in Python, React, FastAPI, Automation, n8n.'>Experienced AI Automation & Full-Stack Developer with skills in Python, React, F...</td><td title='["Python", "React", "FastAPI", "Automation", "n8n", "Docker"]'>["Python", "React", "FastAPI", "Automation", "n8n", "Docker"]</td><td title=''></td><td title='75'>75</td><td title='0'>0</td><td title='0'>0</td><td title='150'>150</td><td title='0'>0</td><td title='150'>150</td><td title='🚀 Rising Star'>🚀 Rising Star</td><td title='2026-11-21T02:32:54.034375+02:00'>2026-11-21T02:32:54.034375+02:00</td><td title='2026-11-21T02:34:25.977109+02:00'>2026-11-21T02:34:25.977109+02:00</td></tr><tr><td title='1'>1</td><td title='kareem@example.com'>kareem@example.com</td><td title='Kareem Hassan'>Kareem Hassan</td><td title='AI Automation & Full-Stack Developer'>AI Automation & Full-Stack Developer</td><td title='Senior (5+ Years)'>Senior (5+ Years)</td><td title='Experienced AI Automation & Full-Stack Developer with skills in Python, React, FastAPI, Automation, n8n.'>Experienced AI Automation & Full-Stack Developer with skills in Python, React, F...</td><td title='["Python", "React", "FastAPI", "Automation", "n8n", "Docker"]'>["Python", "React", "FastAPI", "Automation", "n8n", "Docker"]</td><td title=''></td><td title='75'>75</td><td title='0'>0</td><td title='0'>0</td><td title='150'>150</td><td title='0'>0</td><td title='150'>150</td><td title='🚀 Rising Star'>🚀 Rising Star</td><td title='2026-11-21T02:16:58.105918+02:00'>2026-11-21T02:16:58.105918+02:00</td><td title='2026-11-21T02:16:58.105918+02:00'>2026-11-21T02:16:58.105918+02:00</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="table-card" id="pg_projects">
+            <div class="table-header">
+                <div>
+                    <span class="table-name">📁 projects</span>
+                    <span class="badge badge-cols">12 أعمدة</span>
+                </div>
+                <div class="badge badge-count">📊 1119 صفوف (Rows)</div>
+            </div>
+            <div class="table-scroll">
+                <table>
+                    <thead><tr><th>id<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>integer</span></th><th>platform<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>character varying</span></th><th>platform_key<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>character varying</span></th><th>title<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>text</span></th><th>url<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>text</span></th><th>price<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>character varying</span></th><th>duration<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>character varying</span></th><th>published_at<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>character varying</span></th><th>brief<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>text</span></th><th>requirements<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>jsonb</span></th><th>scraped_at<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>timestamp with time zone</span></th><th>updated_at<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>timestamp with time zone</span></th></tr></thead>
+                    <tbody><tr><td title='4990'>4990</td><td title='مستقل (Mostaql)'>مستقل (Mostaql)</td><td title='mostaql'>mostaql</td><td title='إعداد حملة تسويقية مصغرة باستخدام أدوات الذكاء الاصطناعي'>إعداد حملة تسويقية مصغرة باستخدام أدوات الذكاء الاصطناعي</td><td title='https://mostaql.com/project/1295108-%D8%A5%D8%B9%D8%AF%D8%A7%D8%AF-%D8%AD%D9%85%D9%84%D8%A9-%D8%AA%D8%B3%D9%88%D9%8A%D9%82%D9%8A%D8%A9-%D9%85%D8%B5%D8%BA%D8%B1%D8%A9-%D8%A8%D8%A7%D8%B3%D8%AA%D8%AE%D8%AF%D8%A7%D9%85-%D8%A3%D8%AF%D9%88%D8%A7%D8%AA-%D8%A7%D9%84%D8%B0%D9%83%D8%A7%D8%A1-%D8%A7%D9%84%D8%A7%D8%B5%D8%B7%D9%86%D8%A7%D8%B9%D9%8A'>https://mostaql.com/project/1295108-%D8%A5%D8%B9%D8%AF%D8%A7%D8%AF-%D8%AD%D9%85%...</td><td title='$50.00'>$50.00</td><td title='3 أيام'>3 أيام</td><td title='2026-11-24 17:58:43'>2026-11-24 17:58:43</td><td title='مطلوب متخصص في صناعة المحتوى والتسويق الرقمي للمساعدة في إعداد نموذج تسويقي مصغر لعلامة تجارية واحدة المطلوب: * اقتراح فكرة وتحديد الجمهور المستهدف * إعداد خمس أفكار للمحتوى مع نصوص تسويقية قصيرة * إعداد تصميمين بسيطين باستخدام أدوات الذكاء الاصطناعي * كتابة أفكار وبرومبتات لفيديوهين قصيرين دون إنتاجهما * إعداد جدول نشر مبسط لمدة أسبوعين * اقتراح مؤشرات أداء مناسبة مع نموذج تحليل مختصر * توثيق الأوامر والأدوات المستخدمة لا يشمل العمل إنتاج الفيديوهات أو إدارة الحسابات أو تمويل الإعلانات أو إعداد العرض التقديمي يرجى تحديد مدة التنفيذ وإرفاق نماذج أعمال سابقة مطور Full Stack Senior 5.0 السلام عليكم، اشتغلت من قبل على أعمال مشابهة في التسويق الرقمي وصناعة المحتوى. شملت تحديد الجمهور وكتابة نصوص تسويقية قصيرة واستخدام أدوات الذكاء الاصطناعي في ا... مطور ويب وموبايل و AI لم يحسب السلام عليكم أستاذ عبود، يعطيك العافية. قرأت تفاصيل المشروع بعناية، وأقدر أجهزلك النموذج التسويقي المصغر بشكل عملي ومنظم جدا، وبجودة احترافية في كتابة الأوامر (...'>مطلوب متخصص في صناعة المحتوى والتسويق الرقمي للمساعدة في إعداد نموذج تسويقي مصغر...</td><td title='["الذكاء الاصطناعي", "التسويق الإلكتروني", "إنتاج الفيديو", "تصميم إعلان", "تصميم شعار", "التصميم الإبداعي"]'>["الذكاء الاصطناعي", "التسويق الإلكتروني", "إنتاج الفيديو", "تصميم إعلان", "تصمي...</td><td title='2026-11-24T18:01:11.011417+02:00'>2026-11-24T18:01:11.011417+02:00</td><td title='2026-11-24T18:01:11.780463+02:00'>2026-11-24T18:01:11.780463+02:00</td></tr><tr><td title='4897'>4897</td><td title='فريلانسر (Freelancer.com)'>فريلانسر (Freelancer.com)</td><td title='freelancer'>freelancer</td><td title='Gestione Social Media con AI'>Gestione Social Media con AI</td><td title='https://www.freelancer.com/projects/social-media-marketing/Gestione-Social-Media-con'>https://www.freelancer.com/projects/social-media-marketing/Gestione-Social-Media...</td><td title='€250.0 - €750.0 EUR'>€250.0 - €750.0 EUR</td><td title='7 أيام'>7 أيام</td><td title='2026-11-24 17:58:11'>2026-11-24 17:58:11</td><td title='Voglio usare Instagram e Facebook in modo strategico per trovare nuovi clienti interessati ai miei s'>Voglio usare Instagram e Facebook in modo strategico per trovare nuovi clienti i...</td><td title='["Graphic Design", "Animation", "Illustration", "After Effects", "3D Animation", "Social Media Marketing", "Content Creation", "AI Content Creation"]'>["Graphic Design", "Animation", "Illustration", "After Effects", "3D Animation",...</td><td title='2026-11-24T18:00:32.500061+02:00'>2026-11-24T18:00:32.500061+02:00</td><td title='2026-11-24T18:01:11.850255+02:00'>2026-11-24T18:01:11.850255+02:00</td></tr><tr><td title='4896'>4896</td><td title='فريلانسر (Freelancer.com)'>فريلانسر (Freelancer.com)</td><td title='freelancer'>freelancer</td><td title='Personal Guarantee Signing for Mortgage'>Personal Guarantee Signing for Mortgage</td><td title='https://www.freelancer.com/projects/legal-consultation/Personal-Guarantee-Signing-for-Mortgage'>https://www.freelancer.com/projects/legal-consultation/Personal-Guarantee-Signin...</td><td title='£20.0 - £250.0 GBP'>£20.0 - £250.0 GBP</td><td title='7 أيام'>7 أيام</td><td title='2026-11-24 17:59:00'>2026-11-24 17:59:00</td><td title='I need a legal professional to witness and arrange the signing of a personal guarantee for an Alderm'>I need a legal professional to witness and arrange the signing of a personal gua...</td><td title='["Legal", "Contracts", "Legal Research", "Property Law", "Legal Writing", "Legal Assistance", "Contract Management", "Legal Consultation", "Legal Review", "Notarization Support"]'>["Legal", "Contracts", "Legal Research", "Property Law", "Legal Writing", "Legal...</td><td title='2026-11-24T18:00:32.482073+02:00'>2026-11-24T18:00:32.482073+02:00</td><td title='2026-11-24T18:01:11.849802+02:00'>2026-11-24T18:01:11.849802+02:00</td></tr><tr><td title='4746'>4746</td><td title='خمسات (Khamsat)'>خمسات (Khamsat)</td><td title='khamsat'>khamsat</td><td title='مطلوب محلل بيانات لتحليل البيانات وإعداد Dashboard'>مطلوب محلل بيانات لتحليل البيانات وإعداد Dashboard</td><td title='https://khamsat.com/community/requests/800682-%D9%85%D8%B7%D9%84%D9%88%D8%A8-%D9%85%D8%AD%D9%84%D9%84-%D8%A8%D9%8A%D8%A7%D9%86%D8%A7%D8%AA-%D9%84%D8%AA%D8%AD%D9%84%D9%8A%D9%84-%D8%A7%D9%84%D8%A8%D9%8A%D8%A7%D9%86%D8%A7%D8%AA-%D9%88%D8%A5%D8%B9%D8%AF%D8%A7%D8%AF-dashboard'>https://khamsat.com/community/requests/800682-%D9%85%D8%B7%D9%84%D9%88%D8%A8-%D9...</td><td title='$5.00 - $25.00'>$5.00 - $25.00</td><td title='1 - 3 أيام'>1 - 3 أيام</td><td title='2026-11-15 07:00:32'>2026-11-15 07:00:32</td><td title='مطلوب محلل بيانات لتحليل البيانات وإعداد Dashboard'>مطلوب محلل بيانات لتحليل البيانات وإعداد Dashboard</td><td title='["محلل", "بيانات", "لتحليل", "البيانات", "وإعداد"]'>["محلل", "بيانات", "لتحليل", "البيانات", "وإعداد"]</td><td title='2026-11-24T17:58:11.772452+02:00'>2026-11-24T17:58:11.772452+02:00</td><td title='2026-11-24T18:01:11.835520+02:00'>2026-11-24T18:01:11.835520+02:00</td></tr><tr><td title='4732'>4732</td><td title='خمسات (Khamsat)'>خمسات (Khamsat)</td><td title='khamsat'>khamsat</td><td title='مصمم ومطور واجهات أمامية لتصميم وبرمجة صفحة هبوط'>مصمم ومطور واجهات أمامية لتصميم وبرمجة صفحة هبوط</td><td title='https://khamsat.com/community/requests/801085-%D9%85%D8%B5%D9%85%D9%85-%D9%88%D9%85%D8%B7%D9%88%D8%B1-%D9%88%D8%A7%D8%AC%D9%87%D8%A7%D8%AA-%D8%A3%D9%85%D8%A7%D9%85%D9%8A%D8%A9-%D9%84%D8%AA%D8%B5%D9%85%D9%8A%D9%85-%D9%88%D8%A8%D8%B1%D9%85%D8%AC%D8%A9-%D8%B5%D9%81%D8%AD%D8%A9-%D9%87%D8%A8%D9%88%D8%B7'>https://khamsat.com/community/requests/801085-%D9%85%D8%B5%D9%85%D9%85-%D9%88%D9...</td><td title='$5.00 - $25.00'>$5.00 - $25.00</td><td title='1 - 3 أيام'>1 - 3 أيام</td><td title='2026-11-22 16:00:32'>2026-11-22 16:00:32</td><td title='مصمم ومطور واجهات أمامية لتصميم وبرمجة صفحة هبوط'>مصمم ومطور واجهات أمامية لتصميم وبرمجة صفحة هبوط</td><td title='["مصمم", "ومطور", "واجهات", "أمامية", "لتصميم"]'>["مصمم", "ومطور", "واجهات", "أمامية", "لتصميم"]</td><td title='2026-11-24T17:58:11.759578+02:00'>2026-11-24T17:58:11.759578+02:00</td><td title='2026-11-24T18:01:11.829898+02:00'>2026-11-24T18:01:11.829898+02:00</td></tr><tr><td title='4714'>4714</td><td title='فريلانسر (Freelancer.com)'>فريلانسر (Freelancer.com)</td><td title='freelancer'>freelancer</td><td title='Site Verification in Paraná, Brazil. -- 2'>Site Verification in Paraná, Brazil. -- 2</td><td title='https://www.freelancer.com/projects/photography/Site-Verification-Paran-Brazil-40833723'>https://www.freelancer.com/projects/photography/Site-Verification-Paran-Brazil-4...</td><td title='$60.0 - $120.0 USD'>$60.0 - $120.0 USD</td><td title='7 أيام'>7 أيام</td><td title='2026-11-24 17:51:40'>2026-11-24 17:51:40</td><td title='Confirmis (www.confirmis.com) is a Singapore-based business information provider specializing in con'>Confirmis (www.confirmis.com) is a Singapore-based business information provider...</td><td title='["Photography", "Local Job", "Travel Ready"]'>["Photography", "Local Job", "Travel Ready"]</td><td title='2026-11-24T17:58:11.700820+02:00'>2026-11-24T17:58:11.700820+02:00</td><td title='2026-11-24T18:01:11.853103+02:00'>2026-11-24T18:01:11.853103+02:00</td></tr><tr><td title='4713'>4713</td><td title='فريلانسر (Freelancer.com)'>فريلانسر (Freelancer.com)</td><td title='freelancer'>freelancer</td><td title='Snack Pouch Packaging Design -- 3'>Snack Pouch Packaging Design -- 3</td><td title='https://www.freelancer.com/projects/photoshop/Snack-Pouch-Packaging-Design-40833724'>https://www.freelancer.com/projects/photoshop/Snack-Pouch-Packaging-Design-40833...</td><td title='₹1500.0 - ₹12500.0 INR'>₹1500.0 - ₹12500.0 INR</td><td title='7 أيام'>7 أيام</td><td title='2026-11-24 17:52:04'>2026-11-24 17:52:04</td><td title='I need an eye-catching, retail-ready design for a new snack / confectionery line that will be sold i'>I need an eye-catching, retail-ready design for a new snack / confectionery line...</td><td title='["Photoshop", "Photo Editing", "Creative Design", "Packaging Design", "Digital Art", "Visual Design", "Visual Effects", "Adobe Photoshop"]'>["Photoshop", "Photo Editing", "Creative Design", "Packaging Design", "Digital A...</td><td title='2026-11-24T17:58:11.699993+02:00'>2026-11-24T17:58:11.699993+02:00</td><td title='2026-11-24T18:01:11.852827+02:00'>2026-11-24T18:01:11.852827+02:00</td></tr><tr><td title='4712'>4712</td><td title='فريلانسر (Freelancer.com)'>فريلانسر (Freelancer.com)</td><td title='freelancer'>freelancer</td><td title='Translate Heartbreak Rap Lyrics'>Translate Heartbreak Rap Lyrics</td><td title='https://www.freelancer.com/projects/translation/Translate-Heartbreak-Rap-Lyrics'>https://www.freelancer.com/projects/translation/Translate-Heartbreak-Rap-Lyrics</td><td title='$10.0 - $30.0 USD'>$10.0 - $30.0 USD</td><td title='7 أيام'>7 أيام</td><td title='2026-11-24 17:52:16'>2026-11-24 17:52:16</td><td title='Zovem i kazem da imacu obzira. Pricam sa nekom sestom a bivsa mene proziva Moze da me proziva jer ne'>Zovem i kazem da imacu obzira. Pricam sa nekom sestom a bivsa mene proziva Moze ...</td><td title='["Translation", "Audio Services", "Music", "Voice Talent", "Creative Writing", "Audio Production", "English Translation", "Music Production"]'>["Translation", "Audio Services", "Music", "Voice Talent", "Creative Writing", "...</td><td title='2026-11-24T17:58:11.699212+02:00'>2026-11-24T17:58:11.699212+02:00</td><td title='2026-11-24T18:01:11.852550+02:00'>2026-11-24T18:01:11.852550+02:00</td></tr><tr><td title='4711'>4711</td><td title='فريلانسر (Freelancer.com)'>فريلانسر (Freelancer.com)</td><td title='freelancer'>freelancer</td><td title='Elegant Floral Wedding Invitation Video'>Elegant Floral Wedding Invitation Video</td><td title='https://www.freelancer.com/projects/adobe-photoshop/Elegant-Floral-Wedding-Invitation-Video'>https://www.freelancer.com/projects/adobe-photoshop/Elegant-Floral-Wedding-Invit...</td><td title='$15.0 - $25.0 USD'>$15.0 - $25.0 USD</td><td title='7 أيام'>7 أيام</td><td title='2026-11-24 17:52:19'>2026-11-24 17:52:19</td><td title='I need a traditional and elegant marriage invitation video. The design should be floral with soft pa'>I need a traditional and elegant marriage invitation video. The design should be...</td><td title='["Graphic Design", "Video Services", "Animation", "Video Production", "Video Editing", "Adobe Photoshop"]'>["Graphic Design", "Video Services", "Animation", "Video Production", "Video Edi...</td><td title='2026-11-24T17:58:11.698188+02:00'>2026-11-24T17:58:11.698188+02:00</td><td title='2026-11-24T18:01:11.852284+02:00'>2026-11-24T18:01:11.852284+02:00</td></tr><tr><td title='4710'>4710</td><td title='فريلانسر (Freelancer.com)'>فريلانسر (Freelancer.com)</td><td title='freelancer'>freelancer</td><td title='High-Impact Business Reel Creation'>High-Impact Business Reel Creation</td><td title='https://www.freelancer.com/projects/motion-graphics/High-Impact-Business-Reel-Creation'>https://www.freelancer.com/projects/motion-graphics/High-Impact-Business-Reel-Cr...</td><td title='₹600.0 - ₹1500.0 INR'>₹600.0 - ₹1500.0 INR</td><td title='7 أيام'>7 أيام</td><td title='2026-11-24 17:52:51'>2026-11-24 17:52:51</td><td title='I need a short, punchy reel that drives viewers to pick up the phone or hit WhatsApp the moment it e'>I need a short, punchy reel that drives viewers to pick up the phone or hit What...</td><td title='["Animation", "After Effects", "Final Cut Pro", "Motion Graphics", "Social Media Marketing", "Video Production", "Video Editing", "Adobe Premiere Pro"]'>["Animation", "After Effects", "Final Cut Pro", "Motion Graphics", "Social Media...</td><td title='2026-11-24T17:58:11.696586+02:00'>2026-11-24T17:58:11.696586+02:00</td><td title='2026-11-24T18:01:11.852019+02:00'>2026-11-24T18:01:11.852019+02:00</td></tr><tr><td title='4709'>4709</td><td title='فريلانسر (Freelancer.com)'>فريلانسر (Freelancer.com)</td><td title='freelancer'>freelancer</td><td title='Modern Bold Business Card Design'>Modern Bold Business Card Design</td><td title='https://www.freelancer.com/projects/print-design/Modern-Bold-Business-Card-Design-40833726'>https://www.freelancer.com/projects/print-design/Modern-Bold-Business-Card-Desig...</td><td title='€12.0 - €18.0 EUR'>€12.0 - €18.0 EUR</td><td title='7 أيام'>7 أيام</td><td title='2026-11-24 17:54:13'>2026-11-24 17:54:13</td><td title='I need a sleek, modern-and-bold corporate business card that immediately communicates professionalis'>I need a sleek, modern-and-bold corporate business card that immediately communi...</td><td title='["Graphic Design", "Logo Design", "Corporate Identity", "Business Card Design", "Creative Design", "Adobe Illustrator", "Adobe Creative Suite", "Adobe Photoshop", "Print Design"]'>["Graphic Design", "Logo Design", "Corporate Identity", "Business Card Design", ...</td><td title='2026-11-24T17:58:11.693070+02:00'>2026-11-24T17:58:11.693070+02:00</td><td title='2026-11-24T18:01:11.851729+02:00'>2026-11-24T18:01:11.851729+02:00</td></tr><tr><td title='4708'>4708</td><td title='فريلانسر (Freelancer.com)'>فريلانسر (Freelancer.com)</td><td title='freelancer'>freelancer</td><td title='English Content Writer for Ongoing Projects'>English Content Writer for Ongoing Projects</td><td title='https://www.freelancer.com/projects/content-writing/English-Content-Writer-for-Ongoing'>https://www.freelancer.com/projects/content-writing/English-Content-Writer-for-O...</td><td title='$250.0 - $750.0 USD'>$250.0 - $750.0 USD</td><td title='7 أيام'>7 أيام</td><td title='2026-11-24 17:55:10'>2026-11-24 17:55:10</td><td title='This project revolves around producing crisp, culturally aware copy as well as accurate, idiomatic t'>This project revolves around producing crisp, culturally aware copy as well as a...</td><td title='["Copywriting", "Translation", "Editing", "Article Writing", "Article Rewriting", "German Translator", "Content Writing", "Blog Writing"]'>["Copywriting", "Translation", "Editing", "Article Writing", "Article Rewriting"...</td><td title='2026-11-24T17:58:11.691985+02:00'>2026-11-24T17:58:11.691985+02:00</td><td title='2026-11-24T18:01:11.851444+02:00'>2026-11-24T18:01:11.851444+02:00</td></tr><tr><td title='4707'>4707</td><td title='فريلانسر (Freelancer.com)'>فريلانسر (Freelancer.com)</td><td title='freelancer'>freelancer</td><td title='Review & File UK CT600 Return'>Review & File UK CT600 Return</td><td title='https://www.freelancer.com/projects/tax-compliance/Review-File-Return'>https://www.freelancer.com/projects/tax-compliance/Review-File-Return</td><td title='£20.0 - £250.0 GBP'>£20.0 - £250.0 GBP</td><td title='7 أيام'>7 أيام</td><td title='2026-11-24 17:55:19'>2026-11-24 17:55:19</td><td title='I have already prepared the corporation tax computation and CT600 in Tiny Tax for a small-company (m'>I have already prepared the corporation tax computation and CT600 in Tiny Tax fo...</td><td title='["Accounting", "Finance", "Tax", "Tax Law", "Tax Compliance", "Tax Reporting", "Financial Accounting", "Tax Preparation"]'>["Accounting", "Finance", "Tax", "Tax Law", "Tax Compliance", "Tax Reporting", "...</td><td title='2026-11-24T17:58:11.690669+02:00'>2026-11-24T17:58:11.690669+02:00</td><td title='2026-11-24T18:01:11.851125+02:00'>2026-11-24T18:01:11.851125+02:00</td></tr><tr><td title='4706'>4706</td><td title='فريلانسر (Freelancer.com)'>فريلانسر (Freelancer.com)</td><td title='freelancer'>freelancer</td><td title='SAP Integration Specialist Needed'>SAP Integration Specialist Needed</td><td title='https://www.freelancer.com/projects/sap/SAP-Integration-Specialist-Needed'>https://www.freelancer.com/projects/sap/SAP-Integration-Specialist-Needed</td><td title='₹37500.0 - ₹75000.0 INR'>₹37500.0 - ₹75000.0 INR</td><td title='7 أيام'>7 أيام</td><td title='2026-11-24 17:57:46'>2026-11-24 17:57:46</td><td title='I need an expert to integrate our platform with an existing SAP system. The integration needs to kee'>I need an expert to integrate our platform with an existing SAP system. The inte...</td><td title='["SAP", "SAP Transformation", "SAP BODS", "SAP Master Data Governance", "SAP HANA", "SAP Business Planning and Consolidation", "SAP CPI", "Automation", "API Integration"]'>["SAP", "SAP Transformation", "SAP BODS", "SAP Master Data Governance", "SAP HAN...</td><td title='2026-11-24T17:58:11.655847+02:00'>2026-11-24T17:58:11.655847+02:00</td><td title='2026-11-24T18:01:11.850713+02:00'>2026-11-24T18:01:11.850713+02:00</td></tr><tr><td title='4610'>4610</td><td title='مستقل (Mostaql)'>مستقل (Mostaql)</td><td title='mostaql'>mostaql</td><td title='ربط نموذج Google Form أو جدول Google Sheets لإرسال إشعارات تلقائية إلى مجموعة واتساب'>ربط نموذج Google Form أو جدول Google Sheets لإرسال إشعارات تلقائية إلى مجموعة وا...</td><td title='https://mostaql.com/project/1294978-%D8%B1%D8%A8%D8%B7-%D9%86%D9%85%D9%88%D8%B0%D8%AC-google-form-%D8%A3%D9%88-%D8%AC%D8%AF%D9%88%D9%84-google-sheets-%D9%84%D8%A5%D8%B1%D8%B3%D8%A7%D9%84-%D8%A5%D8%B4%D8%B9%D8%A7%D8%B1%D8%A7%D8%AA-%D8%AA%D9%84%D9%82%D8%A7%D8%A6%D9%8A%D8%A9-%D8%A5%D9%84%D9%89-%D9%85%D8%AC%D9%85%D9%88%D8%B9%D8%A9-%D9%88%D8%A7%D8%AA%D8%B3%D8%A7%D8%A8'>https://mostaql.com/project/1294978-%D8%B1%D8%A8%D8%B7-%D9%86%D9%85%D9%88%D8%B0%...</td><td title='$100.00'>$100.00</td><td title='7 أيام'>7 أيام</td><td title='2026-11-24 17:44:40'>2026-11-24 17:44:40</td><td title='أبحث عن مبرمج أو مطوّر أتمتة لتنفيذ ربط تلقائي بحيث يتم إرسال رسالة منسّقة إلى مجموعة واتساب (WhatsApp Group) فور وصول رد جديد في Google Form أو إضافة/تحديث سطر في Google Sheets بنسق واحد 5.0 السلام عليكم ورحمة الله وبركاته، أقدر أنفذ لحضرتك نظام أتمتة يربط Google Forms وGoogle Sheets بمجموعة واتساب، بحيث يتم إرسال رسالة تلقائية ومنسقة بمجرد وصول رد ... مهندس نظم معتمد في سلة 5.0 حياك Saifaldeen، تحديث السطر في Google Sheets هو النقطة اللي تفلت عادة: يوصل إشعار الرد الجديد، وتغيب التعديلات اللاحقة عن المجموعة، فيشتغل الفريق على معلومة قد... لم يحسب تحياتي لك، النقطة الأهم في هذا الربط هي أن واجهة WhatsApp Cloud الرسمية من Meta لا تدعم الإرسال إلى مجموعات واتساب، لذلك يحتاج النظام إلى بوابة ربط تدعم المجموع... 5.0 اهلا استاذ سيف الدين فهمت إن هدفك مش مجرد إرسال رسالة على واتساب لكن إنشاء نظام تلقائي يقلل التدخل اليدوي ويمنع ضياع أي رد أو تحديث ويوفر وقتك في متابعة البيانا... مطور أتمتة وإصلاح مواقع لم يحسب مرحبا سيف الدين، أشغل هذا النوع من الربط فعليا: أنظمة ترسل رسائل منسقة إلى مجموعات واتساب تلقائيا عند وصول طلب جديد أو تغير حالة، وتعمل يوميا. نقطتان تحددان نجا... مطور Full Stack Senior 5.0 السلام عليكم، اشتغلت على أعمال أتمتة وربط مشابهة من قبل، تنقل البيانات تلقائيا بين الأدوات وترسل إشعارات بدون تدخل يدوي. تقدر تطلع على نماذج من أعمالي على مستقل... 4.9 السلام عليكم أستاذ سيف، من غير ما تدور كتير ، دا مجال اختصاصي ، وان شاء الله هقدملك عرض خسارة تفوته العرض يشمل : - نسخة demo مبدئية من فكرتك خلال ساعات مجانا تم... مطور ويب وموبايل و AI لم يحسب السلام عليكم أستاذ سيف الدين، يعطيك العافية. اطلعت على تفاصيل المشروع والصورة المرفقة لـ نظام التوظيف الذكي، والصورة واضحة جدا وفاهم بالظبط اللي محتاجه: فور تعب... لم يحسب أهلا بحضرتك، أقدر أعمل لحضرتك الربط ده بالكامل: أي رد جديد في Google Form أو تعديل في Google Sheets، تتبعت رسالة منسقة لجروب الواتساب أوتوماتيك. هيشمل: - ربط ال... 5.0 السلام عليكم ورحمة الله وبركاته، لدي خبرة عملية في تطوير أنظمة أتمتة واتساب وربط Google Sheets بواجهات API وWebhooks باستخدام n8n، وهو نفس الأساس التقني المطلوب... لم يحسب السلام عليكم أستاذ سيف الدين، قرأت طلبك جيدا، وهدفك إشعار فوري ومنسق في مجموعة واتساب كلما وصل رد جديد في Google Form أو تغير سطر في Google Sheets. نقطة مهمة قب... مهندس برمجيات وقائد تقني 3.0 مرحبا سيف الدين، سبق أن نفذت أتمتة إرسال واتساب بالطريقتين: الرسمية عبر WhatsApp Cloud API من Meta (تذكيرات وإشعارات تلقائية في نظام يعمل فعليا)، وغير الرسمية ع...'>أبحث عن مبرمج أو مطوّر أتمتة لتنفيذ ربط تلقائي بحيث يتم إرسال رسالة منسّقة إلى م...</td><td title='["api integration", "Zapier", "جداول بيانات جوجل", "استضافة المواقع", "n8n"]'>["api integration", "Zapier", "جداول بيانات جوجل", "استضافة المواقع", "n8n"]</td><td title='2026-11-24T17:51:23.412634+02:00'>2026-11-24T17:51:23.412634+02:00</td><td title='2026-11-24T18:01:11.788641+02:00'>2026-11-24T18:01:11.788641+02:00</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="table-card" id="pg_user_applications">
+            <div class="table-header">
+                <div>
+                    <span class="table-name">📁 user_applications</span>
+                    <span class="badge badge-cols">6 أعمدة</span>
+                </div>
+                <div class="badge badge-count">📊 0 صفوف (Rows)</div>
+            </div>
+            <div class="table-scroll">
+                <table>
+                    <thead><tr><th>id<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>integer</span></th><th>user_email<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>character varying</span></th><th>project_title<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>text</span></th><th>platform<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>character varying</span></th><th>action<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>character varying</span></th><th>created_at<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>timestamp with time zone</span></th></tr></thead>
+                    <tbody><tr><td colspan='6' style='text-align:center;padding:24px;color:#64748b;'>لا توجد بيانات حالياً في هذا الجدول (Empty Table)</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="table-card" id="pg_users">
+            <div class="table-header">
+                <div>
+                    <span class="table-name">📁 users</span>
+                    <span class="badge badge-cols">7 أعمدة</span>
+                </div>
+                <div class="badge badge-count">📊 1 صفوف (Rows)</div>
+            </div>
+            <div class="table-scroll">
+                <table>
+                    <thead><tr><th>id<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>integer</span></th><th>full_name<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>character varying</span></th><th>email<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>character varying</span></th><th>password_hash<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>character varying</span></th><th>is_verified<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>boolean</span></th><th>created_at<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>timestamp with time zone</span></th><th>verified_at<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>timestamp with time zone</span></th></tr></thead>
+                    <tbody><tr><td title='29'>29</td><td title='aya'>aya</td><td title='hanfyaya42@gmail.com'>hanfyaya42@gmail.com</td><td title='$2b$12$1dGNVip7YetjsLFSHn5Mh.is8AtxRvAMtemo5GaDVCyIGc8G1NfQm'>$2b$12$1dGNVip7YetjsLFSHn5Mh.is8AtxRvAMtemo5GaDVCyIGc8G1NfQm</td><td title='True'>True</td><td title='2026-11-24T17:55:02.641749+02:00'>2026-11-24T17:55:02.641749+02:00</td><td title='2026-11-24T17:55:22.079629+02:00'>2026-11-24T17:55:22.079629+02:00</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+        
+        </div>
+
+        <div id="tab-sq" class="tab-content">
+            
+        <div class="table-card" id="sq_users">
+            <div class="table-header">
+                <div>
+                    <span class="table-name">📁 users</span>
+                    <span class="badge badge-cols">7 أعمدة</span>
+                </div>
+                <div class="badge badge-count">📊 0 صفوف (Rows)</div>
+            </div>
+            <div class="table-scroll">
+                <table>
+                    <thead><tr><th>id<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>INTEGER</span></th><th>full_name<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>TEXT</span></th><th>email<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>TEXT</span></th><th>password_hash<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>TEXT</span></th><th>is_verified<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>INTEGER</span></th><th>created_at<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>TEXT</span></th><th>verified_at<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>TEXT</span></th></tr></thead>
+                    <tbody><tr><td colspan='7' style='text-align:center;padding:24px;color:#64748b;'>لا توجد بيانات حالياً في هذا الجدول (Empty Table)</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="table-card" id="sq_otp_verifications">
+            <div class="table-header">
+                <div>
+                    <span class="table-name">📁 otp_verifications</span>
+                    <span class="badge badge-cols">9 أعمدة</span>
+                </div>
+                <div class="badge badge-count">📊 0 صفوف (Rows)</div>
+            </div>
+            <div class="table-scroll">
+                <table>
+                    <thead><tr><th>id<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>INTEGER</span></th><th>email<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>TEXT</span></th><th>otp_hash<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>TEXT</span></th><th>attempts<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>INTEGER</span></th><th>max_attempts<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>INTEGER</span></th><th>is_used<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>INTEGER</span></th><th>expires_at<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>TEXT</span></th><th>last_sent_at<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>TEXT</span></th><th>created_at<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>TEXT</span></th></tr></thead>
+                    <tbody><tr><td colspan='9' style='text-align:center;padding:24px;color:#64748b;'>لا توجد بيانات حالياً في هذا الجدول (Empty Table)</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="table-card" id="sq_user_profiles">
+            <div class="table-header">
+                <div>
+                    <span class="table-name">📁 user_profiles</span>
+                    <span class="badge badge-cols">13 أعمدة</span>
+                </div>
+                <div class="badge badge-count">📊 0 صفوف (Rows)</div>
+            </div>
+            <div class="table-scroll">
+                <table>
+                    <thead><tr><th>email<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>TEXT</span></th><th>full_name<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>TEXT</span></th><th>title<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>TEXT</span></th><th>experience_level<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>TEXT</span></th><th>summary<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>TEXT</span></th><th>skills<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>TEXT</span></th><th>applied_jobs_count<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>INTEGER</span></th><th>proposals_count<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>INTEGER</span></th><th>skills_score<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>INTEGER</span></th><th>applied_score<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>INTEGER</span></th><th>total_score<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>INTEGER</span></th><th>badge<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>TEXT</span></th><th>updated_at<br><span style='font-size:10px;color:#94a3b8;font-weight:normal;'>TEXT</span></th></tr></thead>
+                    <tbody><tr><td colspan='13' style='text-align:center;padding:24px;color:#64748b;'>لا توجد بيانات حالياً في هذا الجدول (Empty Table)</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+        
+        </div>
+    </div>
+
+    <script>
+        function showTab(type) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            if(type === 'pg') {
+                document.querySelectorAll('.tab-btn')[0].classList.add('active');
+                document.getElementById('tab-pg').classList.add('active');
+            } else {
+                document.querySelectorAll('.tab-btn')[1].classList.add('active');
+                document.getElementById('tab-sq').classList.add('active');
+            }
+        }
+    </script>
+</body>
+</html>

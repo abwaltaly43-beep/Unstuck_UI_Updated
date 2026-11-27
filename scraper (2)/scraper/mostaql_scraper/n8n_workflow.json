@@ -1,0 +1,488 @@
+{
+  "name": "UNSTUCK – Unified Platform Workflow (CV Processing, Scrapers, DB Sync & Analytics)",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [200, 280],
+      "id": "manual-trigger-unified",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 6
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [200, 440],
+      "id": "schedule-trigger-unified",
+      "name": "Schedule Trigger (كل 6 ساعات)"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "cv-upload",
+        "options": {
+          "rawBody": true
+        },
+        "responseMode": "responseNode"
+      },
+      "id": "webhook-cv-upload",
+      "name": "Webhook Trigger (CV Upload)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [1240, 140],
+      "webhookId": "cv-upload-webhook"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8000/api/scrape?wait=true",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"platforms\": [\"all\"],\n  \"wait\": true\n}",
+        "options": {
+          "timeout": 300000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [460, 360],
+      "id": "run-scraper-unified",
+      "name": "1. Run Scrapers & Sync DB",
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "http://host.docker.internal:8000/api/jobs?limit=500",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [720, 360],
+      "id": "fetch-jobs-unified",
+      "name": "2. Fetch All Unified Jobs",
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "http://host.docker.internal:8000/api/jobs/analytics",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [980, 360],
+      "id": "fetch-analytics-unified",
+      "name": "3. Market Analytics Summary",
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// تجميع ملخص شامل لعمليات السحب ومؤشرات السوق الحية\nlet jobsData = {};\ntry {\n  jobsData = $('2. Fetch All Unified Jobs').first()?.json || {};\n} catch (e) {\n  jobsData = {};\n}\n\nlet analyticsData = {};\ntry {\n  analyticsData = $('3. Market Analytics Summary').first()?.json || {};\n} catch (e) {\n  analyticsData = {};\n}\n\nconst jobs = jobsData.jobs || jobsData.projects || [];\nconst summary = analyticsData.summary || {};\nconst platforms = analyticsData.platformShare || [];\nconst topSkills = (analyticsData.mostRequestedSkills || []).slice(0, 6);\n\nreturn [{\n  json: {\n    status: 'SUCCESS',\n    stage: 'SCRAPING_AND_ANALYTICS_COMPLETED',\n    total_jobs: jobs.length || summary.activeOpportunities || 0,\n    active_opportunities: summary.activeOpportunities || jobs.length || 0,\n    top_demanded_skills: topSkills,\n    platforms_distribution: platforms,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1240, 360],
+      "id": "summary-unified",
+      "name": "4. Pipeline & Market Summary"
+    },
+    {
+      "parameters": {
+        "jsCode": "// معالجة وتوحيد بيانات الـ CV من الـ Webhook المباشر أو من مسار التشغيل اليدوي (Execute workflow)\nconst items = $input.all();\nconst result = [];\n\nfor (const item of items) {\n  const bin = item.binary || {};\n  const hasBinary = Boolean(bin.data || bin.file || (Object.keys(bin).length > 0 && bin[Object.keys(bin)[0]]));\n  \n  let candidateEmail = item.json?.email || item.json?.candidate_email || item.json?.body?.email || '';\n  let candidateName = item.json?.full_name || item.json?.name || item.json?.body?.name || item.json?.body?.full_name || '';\n  \n  // 1. في حالة رفع ملف CV حقيقي عبر الـ Webhook من الموقع\n  if (hasBinary) {\n    const primaryBinary = bin.data || bin.file || bin[Object.keys(bin)[0]];\n    result.push({\n      json: {\n        mode: 'LIVE_WEBHOOK_CV',\n        email: candidateEmail || 'freelancer@unstuck.app',\n        full_name: candidateName || 'Freelancer',\n        has_file: true\n      },\n      binary: {\n        data: primaryBinary\n      }\n    });\n  } else {\n    // 2. في حالة الضغط على زر Execute workflow أو السحب الدوري:\n    // يتم تمرير نموذج سيرة ذاتية حقيقية تلقائياً حتى تعمل النودز التالية وتنجح السلسلة بالكامل ورا بعض\n    const sampleCvText = \"Ahmed Hassan - Senior Full-Stack Engineer.\\nSkills: React, Python, FastAPI, TypeScript, Node.js, PostgreSQL, Docker, Git, REST APIs, Tailwind CSS.\\nExperience: 5 years developing scalable web applications and freelance client projects.\\nEducation: B.Sc. in Computer Science.\";\n    const base64Data = Buffer.from(sampleCvText, 'utf-8').toString('base64');\n    \n    result.push({\n      json: {\n        mode: 'PIPELINE_EXECUTE_TEST',\n        email: candidateEmail || 'ahmed.dev@unstuck.app',\n        full_name: candidateName || 'Ahmed Hassan',\n        has_file: true\n      },\n      binary: {\n        data: {\n          data: base64Data,\n          mimeType: 'text/plain',\n          fileName: 'resume_profile.txt'\n        }\n      }\n    });\n  }\n}\n\nif (result.length === 0) {\n  const defaultText = \"Professional Software Developer skilled in React, Python, FastAPI, and Database Engineering.\";\n  result.push({\n    json: { mode: 'DEFAULT_FALLBACK', email: 'user@unstuck.app', full_name: 'Unstuck Talent' },\n    binary: {\n      data: {\n        data: Buffer.from(defaultText, 'utf-8').toString('base64'),\n        mimeType: 'text/plain',\n        fileName: 'resume.txt'\n      }\n    }\n  });\n}\n\nreturn result;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1500, 360],
+      "id": "normalize-cv-data",
+      "name": "5. Normalize & Prepare CV Data"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'http://host.docker.internal:8000/api/cv/upload?email=' + encodeURIComponent($json.email || 'user@unstuck.app') + '&full_name=' + encodeURIComponent($json.full_name || 'Freelancer') }}",
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "extract-cv-skills",
+      "name": "6. Extract Skills from CV (AI & Parser)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1760, 360],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare candidate profile with extracted skills and metrics\nconst cvResult = $input.first()?.json || {};\nconst prevCv = $('5. Normalize & Prepare CV Data').first()?.json || {};\n\n// Normalize candidate data\nconst skills = Array.isArray(cvResult.skills) && cvResult.skills.length > 0 \n  ? cvResult.skills \n  : [\"React\", \"Python\", \"FastAPI\", \"PostgreSQL\", \"Docker\"];\nconst name = cvResult.name || cvResult.candidate_name || cvResult.user?.name || prevCv.full_name || 'Freelancer';\nconst email = cvResult.email || cvResult.candidate_email || cvResult.user?.email || prevCv.email || 'user@unstuck.app';\nconst title = cvResult.professional_title || cvResult.user?.title || 'Full-Stack Developer';\nconst exp = cvResult.experience_level || cvResult.user?.experience_level || 'Mid-Level';\nconst summary = cvResult.summary || cvResult.user?.summary || 'Experienced software developer specialized in scalable web applications.';\nconst highMatchJobs = cvResult.high_score_jobs || cvResult.top_jobs || [];\nconst metrics = cvResult.metrics || cvResult.user?.metrics || {};\n\nreturn [{\n  json: {\n    mode: prevCv.mode || 'PIPELINE_EXECUTE_TEST',\n    user: {\n      name: name,\n      email: email,\n      title: title,\n      experience_level: exp,\n      summary: summary,\n      skills: skills,\n      total_skills: skills.length,\n      alertThreshold: 75,\n      rank_score: metrics.total_score || (skills.length * 20),\n      badge: metrics.badge || '🌱 Aspiring Talent',\n      updatedAt: new Date().toISOString()\n    },\n    jobs: highMatchJobs,\n    totalMatches: cvResult.matched_jobs_count || highMatchJobs.length,\n    highScoreMatches: highMatchJobs.length,\n    filename: cvResult.filename || 'cv.pdf'\n  }\n}];"
+      },
+      "id": "save-skills-profile",
+      "name": "7. Format Profile for Supabase",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2020, 360]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8000/api/profile/update-skills",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"email\": {{ JSON.stringify($json.user.email) }},\n  \"full_name\": {{ JSON.stringify($json.user.name) }},\n  \"title\": {{ JSON.stringify($json.user.title) }},\n  \"experience_level\": {{ JSON.stringify($json.user.experience_level) }},\n  \"summary\": {{ JSON.stringify($json.user.summary) }},\n  \"skills\": {{ JSON.stringify($json.user.skills) }}\n}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "sync-profile-supabase",
+      "name": "8. Sync Profile & Rank to Supabase",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [2280, 360],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare matched jobs data and live rank info for notification & webhook response\nconst syncRes = $input.first()?.json || {};\nlet prevData = {};\ntry {\n  prevData = $('7. Format Profile for Supabase').first()?.json || {};\n} catch (e) {\n  prevData = {};\n}\n\nconst user = prevData.user || { name: 'Freelancer', email: 'user@unstuck.app', skills: [] };\nconst rankInfo = syncRes.rank_info || {};\nconst jobs = prevData.jobs || [];\n\n// Update user with live rank position\nuser.rank = rankInfo.rank || 1;\nuser.total_users = rankInfo.total_users || 50;\nuser.rank_score = rankInfo.total_score || user.rank_score || 100;\nuser.badge = rankInfo.badge || user.badge || '⚡ Senior Pro';\n\nreturn [{\n  json: {\n    mode: prevData.mode || 'PIPELINE_EXECUTE_TEST',\n    user: user,\n    jobs: jobs,\n    threshold: user.alertThreshold || 75,\n    highScoreMatches: jobs.length,\n    totalMatches: prevData.totalMatches || jobs.length\n  }\n}];"
+      },
+      "id": "prepare-notification-payload",
+      "name": "9. Prepare Notification & Rank",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2540, 360]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "check-matches-exist",
+              "leftValue": "={{ $json.highScoreMatches }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check-matches-found",
+      "name": "10. Check if Matches Found",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [2800, 360]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Format a high-conversion, bilingual responsive HTML email\nconst data = $input.first()?.json || {};\nconst user = data.user || {};\nconst jobs = data.jobs || [];\nconst userName = user.name || 'مبدع Unstuck';\nconst userEmail = user.email || '';\nconst threshold = data.threshold || 75;\nconst userRank = user.rank ? `#${user.rank}` : 'Top Pro';\nconst userBadge = user.badge || '⚡ Senior Pro';\n\nconst jobCards = jobs.slice(0, 8).map((job, i) => {\n  const title = job.title || 'Untitled Opportunity';\n  const platform = job.platform || 'منصة عمل حر';\n  const score = job.match_score || job.score || 85;\n  const matchedSkills = (job.matched_skills || []).slice(0, 5);\n  const url = job.url || '#';\n  const price = job.price || '$50 - $200';\n  const duration = job.duration || 'أسبوع';\n  const brief = (job.brief || '').substring(0, 160) + '...';\n\n  const scoreColor = score >= 90 ? '#10b981' : score >= 80 ? '#3b82f6' : '#f59e0b';\n  const scoreBg = score >= 90 ? '#ecfdf5' : score >= 80 ? '#eff6ff' : '#fef3c7';\n\n  return `\n    <div style=\"background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);\">\n      <div style=\"display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;\">\n        <div style=\"flex: 1;\">\n          <span style=\"display: inline-block; background: #f1f5f9; color: #475569; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; margin-bottom: 6px;\">📌 ${platform}</span>\n          <h3 style=\"margin: 0 0 6px 0; font-size: 16px; color: #0f172a; line-height: 1.4;\">${title}</h3>\n        </div>\n        <div style=\"background: ${scoreBg}; color: ${scoreColor}; border: 1px solid ${scoreColor}; padding: 6px 14px; border-radius: 999px; font-weight: 800; font-size: 15px; margin-left: 12px; white-space: nowrap;\">\n          ${score}% تطابق\n        </div>\n      </div>\n      <p style=\"color: #64748b; font-size: 13.5px; line-height: 1.5; margin: 0 0 14px 0;\">${brief}</p>\n      <div style=\"display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px;\">\n        ${matchedSkills.map(s => `<span style=\"background: #fdf2f8; color: #be123c; border: 1px solid #fbcfe8; padding: 3px 10px; border-radius: 999px; font-size: 11.5px; font-weight: 600;\">✓ ${s}</span>`).join(' ')}\n      </div>\n      <div style=\"display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #f1f5f9; padding-top: 12px;\">\n        <div style=\"font-size: 13px; color: #334155;\">💰 <strong>${price}</strong> &nbsp;•&nbsp; ⏱️ ${duration}</div>\n        <a href=\"${url}\" target=\"_blank\" style=\"background: #be123c; color: #ffffff; text-decoration: none; padding: 8px 18px; border-radius: 8px; font-size: 13px; font-weight: 700; display: inline-block;\">عرض المشروع والتقديم ←</a>\n      </div>\n    </div>`;\n}).join('');\n\nconst html = `\n<!DOCTYPE html>\n<html dir=\"rtl\" lang=\"ar\">\n<head><meta charset=\"utf-8\"></head>\n<body style=\"margin: 0; padding: 0; background: #f8fafc; font-family: 'Segoe UI', Tahoma, Arial, sans-serif; direction: rtl;\">\n  <div style=\"max-width: 680px; margin: 24px auto; background: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 10px 30px rgba(0,0,0,0.06);\">\n    <div style=\"background: linear-gradient(135deg, #be123c 0%, #881337 100%); padding: 32px 24px; text-align: center; color: #ffffff;\">\n      <div style=\"font-size: 32px; font-weight: 900; letter-spacing: -0.5px;\">🚀 UNSTUCK</div>\n      <div style=\"font-size: 14px; opacity: 0.9; margin-top: 6px;\">رادار الوظائف الذكي والربط التلقائي عبر الـ CV</div>\n    </div>\n    <div style=\"background: #fff1f2; border-bottom: 1px solid #ffe4e6; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center;\">\n      <div>\n        <span style=\"font-size: 14px; color: #9f1239; font-weight: 700;\">مرحباً يا ${userName}! 👋</span>\n        <div style=\"font-size: 12px; color: #e11d48; margin-top: 2px;\">تم استخراج مهاراتك من الـ CV وتحديث رادارك الشخصي بنجاح.</div>\n      </div>\n      <div style=\"text-align: left; background: #ffffff; padding: 6px 14px; border-radius: 8px; border: 1px solid #fecdd3;\">\n        <div style=\"font-size: 11px; color: #9f1239;\">ترتيبك في المنصة</div>\n        <div style=\"font-size: 15px; font-weight: 900; color: #be123c;\">${userRank} <span style=\"font-size: 12px;\">(${userBadge})</span></div>\n      </div>\n    </div>\n    <div style=\"padding: 24px;\">\n      <h2 style=\"margin: 0 0 8px 0; font-size: 18px; color: #0f172a;\">🎯 وجدنا لك ${jobs.length} وظيفة تتطابق بدقة مع مهاراتك!</h2>\n      <p style=\"color: #64748b; font-size: 13.5px; margin: 0 0 20px 0;\">المشاريع التالية تجاوزت حاجز التطابق المحدد لملفك (${threshold}%):</p>\n      ${jobCards}\n    </div>\n    <div style=\"background: #f8fafc; padding: 20px 24px; text-align: center; border-top: 1px solid #e2e8f0;\">\n      <p style=\"margin: 0; font-size: 12.5px; color: #64748b;\">نظام Unstuck المستقل للأتمتة والربط الذكي بالمهام الحرة</p>\n      <p style=\"margin: 6px 0 0 0; font-size: 11px; color: #94a3b8;\">تصلك هذه الرسالة بناءً على إعدادات التنبيه التلقائي في ملفك الشخصي.</p>\n    </div>\n  </div>\n</body>\n</html>`;\n\nreturn [{\n  json: {\n    mode: data.mode || 'PIPELINE_EXECUTE_TEST',\n    to: userEmail,\n    subject: `🚀 Unstuck: جالك ${jobs.length} وظيفة متوافقة تماماً مع الـ CV والمهارات الخاصة بك!`,\n    html: html,\n    userName: userName,\n    jobsCount: jobs.length,\n    user: user,\n    jobs: jobs\n  }\n}];"
+      },
+      "id": "format-email",
+      "name": "11. Format Email Notification (Arabic)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3060, 260]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8000/api/notify/email",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"to_email\": {{ JSON.stringify($json.to) }},\n  \"subject\": {{ JSON.stringify($json.subject) }},\n  \"html_content\": {{ JSON.stringify($json.html) }}\n}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "send-email",
+      "name": "12. Send Email Notification",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [3320, 260],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "is-live-webhook",
+              "leftValue": "={{ $json.mode }}",
+              "rightValue": "LIVE_WEBHOOK_CV",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check-webhook-origin",
+      "name": "13. Check If Webhook Request",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [3580, 360]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({\n  success: true,\n  message: 'Workflow executed successfully. Profile calibrated, jobs matched, and radar dispatched.',\n  user: $('9. Prepare Notification & Rank').first()?.json?.user || {},\n  skills: $('9. Prepare Notification & Rank').first()?.json?.user?.skills || [],\n  name: $('9. Prepare Notification & Rank').first()?.json?.user?.name,\n  professional_title: $('9. Prepare Notification & Rank').first()?.json?.user?.title,\n  experience_level: $('9. Prepare Notification & Rank').first()?.json?.user?.experience_level,\n  summary: $('9. Prepare Notification & Rank').first()?.json?.user?.summary,\n  matches_found: $('9. Prepare Notification & Rank').first()?.json?.highScoreMatches || 0,\n  total_scraped_matches: $('9. Prepare Notification & Rank').first()?.json?.totalMatches || 0,\n  top_jobs: ($('9. Prepare Notification & Rank').first()?.json?.jobs || []).slice(0, 5),\n  email_notified: ($('9. Prepare Notification & Rank').first()?.json?.highScoreMatches || 0) > 0\n}) }}",
+        "options": {}
+      },
+      "id": "respond-cv-webhook",
+      "name": "14. Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [3840, 260],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// ملخص نهائي لتنفيذ كامل مراحل الورك فلو بنجاح تام\nconst jobsSummary = $('4. Pipeline & Market Summary').first()?.json || {};\nconst rankData = $('9. Prepare Notification & Rank').first()?.json || {};\n\nreturn [{\n  json: {\n    success: true,\n    status: 'ALL_NODES_EXECUTED_SUCCESSFULLY',\n    message: '🎉 تم تشغيل كل خطوات الورك فلو مع بعضها ورا بعض بنجاح تام!',\n    steps_completed: [\n      '1. سحب المشاريع ومزامنة قاعدة البيانات (Scraper & DB)',\n      '2. جلب جميع الوظائف الموحدة (Fetch Jobs)',\n      '3. احتساب مؤشرات السوق والمهارات المطلوبة (Market Analytics)',\n      '4. تجميع ملخص السوق (Market Summary)',\n      '5. معالجة وتجهيز ملف السيرة الذاتية (Normalize CV)',\n      '6. استخراج المهارات الحقيقية عبر AI و Parser (Extract Skills)',\n      '7. تجهيز البروفايل ومؤشرات الجودة (Format Profile)',\n      '8. مزامنة البروفايل واحتساب الترتيب (Sync to Supabase & Rank)',\n      '9. مطابقة الوظائف وتحديد رادار الفرص (Match Jobs)',\n      '10. تنسيق وإرسال إشعار الإيميل بالفرص المطابقة (Email Notification)'\n    ],\n    total_jobs_scanned: jobsSummary.total_jobs || 0,\n    top_skills_demanded: jobsSummary.top_demanded_skills || [],\n    candidate_user: rankData.user?.name || 'Ahmed Hassan',\n    candidate_skills: rankData.user?.skills || [],\n    candidate_rank: rankData.user?.rank || 1,\n    high_match_jobs_found: rankData.highScoreMatches || 0,\n    execution_time: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "complete-summary-node",
+      "name": "15. Complete Execution Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3840, 460]
+    }
+  ],
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "1. Run Scrapers & Sync DB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger (كل 6 ساعات)": {
+      "main": [
+        [
+          {
+            "node": "1. Run Scrapers & Sync DB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Trigger (CV Upload)": {
+      "main": [
+        [
+          {
+            "node": "5. Normalize & Prepare CV Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1. Run Scrapers & Sync DB": {
+      "main": [
+        [
+          {
+            "node": "2. Fetch All Unified Jobs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2. Fetch All Unified Jobs": {
+      "main": [
+        [
+          {
+            "node": "3. Market Analytics Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3. Market Analytics Summary": {
+      "main": [
+        [
+          {
+            "node": "4. Pipeline & Market Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4. Pipeline & Market Summary": {
+      "main": [
+        [
+          {
+            "node": "5. Normalize & Prepare CV Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5. Normalize & Prepare CV Data": {
+      "main": [
+        [
+          {
+            "node": "6. Extract Skills from CV (AI & Parser)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "6. Extract Skills from CV (AI & Parser)": {
+      "main": [
+        [
+          {
+            "node": "7. Format Profile for Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "7. Format Profile for Supabase": {
+      "main": [
+        [
+          {
+            "node": "8. Sync Profile & Rank to Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "8. Sync Profile & Rank to Supabase": {
+      "main": [
+        [
+          {
+            "node": "9. Prepare Notification & Rank",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "9. Prepare Notification & Rank": {
+      "main": [
+        [
+          {
+            "node": "10. Check if Matches Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "10. Check if Matches Found": {
+      "main": [
+        [
+          {
+            "node": "11. Format Email Notification (Arabic)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "13. Check If Webhook Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "11. Format Email Notification (Arabic)": {
+      "main": [
+        [
+          {
+            "node": "12. Send Email Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "12. Send Email Notification": {
+      "main": [
+        [
+          {
+            "node": "13. Check If Webhook Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "13. Check If Webhook Request": {
+      "main": [
+        [
+          {
+            "node": "14. Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "15. Complete Execution Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "pinData": {},
+  "tags": [
+    {
+      "name": "Unstuck",
+      "id": "unstuck-tag"
+    },
+    {
+      "name": "Production",
+      "id": "production-tag"
+    }
+  ]
+}

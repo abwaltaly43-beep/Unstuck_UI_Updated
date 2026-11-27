@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build & Bundles
+dist/
+build/
+
+# Python & Scraper
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+
+# Large binaries (exceeds GitHub file limits)
+cloudflared.exe
+
+# Database & Runtime local data
+postgres_data/
+.n8n/
+*.log
+
+# Environment & Secret files
+.env.local
+.env.*.local
+
+# OS files
+.DS_Store
+Thumbs.db
