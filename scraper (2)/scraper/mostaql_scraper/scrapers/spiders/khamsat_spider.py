@@ -55,7 +55,7 @@ class KhamsatSpider(scrapy.Spider):
             elif any(w in row_text for w in ["قيد التنفيذ", "تحت التنفيذ", "جاري التنفيذ"]):
                 status = "تحت التنفيذ"
 
-            # استخراج السعر إن ذُكر صراحة فقط، وإن لم يوجد لا تضع أي قيمة افتراضية
+            # استخراج السعر إن ذُكر صراحة
             price = None
             price_match = re.search(
                 r'(?:ميزاني[ةي]|الميزانية|سعر|السعر|مقابل|بـ|بمبلغ|مبلغ|تكلفة)\s*[:=]?\s*(\$?\s*\d+(?:\s*[-–]\s*\d+)?\s*(?:\$|دولار|USD)?)',
@@ -74,16 +74,18 @@ class KhamsatSpider(scrapy.Spider):
             if dur_match:
                 duration = clean(dur_match.group(1))
 
-            keywords = extract_keywords(title=title, text=title)
+            # استخراج أي مقتطف نصي متاح في الجدول مباشرة كبداية
+            row_desc = clean(" ".join(row.css("td.details p::text, .details-desc::text, tr.forum_post p::text").getall()))
+            initial_desc = row_desc if len(row_desc) > 10 else title
 
-            # ملاحظة: صفحات تفاصيل خمسات (/community/requests/<id>) محمية بـ AWS WAF Challenge،
-            # لذلك نعتمد على العنوان الكامل للطلب الأصلي من صفحة القائمة بدون تعليقات البائعين.
+            keywords = extract_keywords(title=title, text=initial_desc)
+
             item = ProjectItem(
                 platform="خمسات (Khamsat)",
                 title=title,
                 url=url,
-                brief=title,
-                description=title,
+                brief=initial_desc,
+                description=initial_desc,
                 status=status,
                 requirements=keywords
             )
@@ -94,6 +96,54 @@ class KhamsatSpider(scrapy.Spider):
             if published_at:
                 item["published_at"] = published_at
 
+            # متابعة رابط تفاصيل الطلب لجلب الوصف الحقيقي الكامل للبروجكت
+            yield response.follow(
+                url,
+                self.parse_details,
+                meta={'item': item},
+                errback=self.handle_err,
+                dont_filter=True
+            )
+
+    def parse_details(self, response):
+        item = response.meta.get('item')
+        if not item:
+            return
+
+        # استخراج وصف الطلب الكامل من صفحة تفاصيل الطلب بخمسات
+        desc_parts = []
+        for selector in [
+            "article.entry-body ::text",
+            ".forum_post-content ::text",
+            ".entry-content ::text",
+            ".post-content ::text",
+            "[class*='post-body'] ::text",
+            "[class*='entry-body'] ::text",
+            ".comment_content ::text",
+            "#post-content ::text"
+        ]:
+            texts = [clean(t) for t in response.css(selector).getall() if len(clean(t)) > 5]
+            if texts:
+                desc_parts = texts
+                break
+
+        if not desc_parts:
+            desc_parts = [clean(t) for t in response.xpath("//div[contains(@class, 'content') or contains(@class, 'body')]//p//text()").getall() if len(clean(t)) > 5]
+
+        if desc_parts:
+            full_desc = clean(" ".join(desc_parts))
+            if len(full_desc) > 15:
+                item["description"] = full_desc
+                item["brief"] = full_desc[:300] + "..." if len(full_desc) > 300 else full_desc
+                # تحديث الكلمات المفتاحية بالوصف الكامل الجديد
+                item["requirements"] = extract_keywords(title=item["title"], text=full_desc)
+
+        yield item
+
+    def handle_err(self, failure):
+        # في حالة تعذر فتح التفاصيل نرجع العنصر الأساسي بدون تعطيل السكرابر
+        item = failure.request.meta.get('item')
+        if item:
             yield item
 
 
