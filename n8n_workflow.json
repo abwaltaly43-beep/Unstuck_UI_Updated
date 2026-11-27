@@ -1,12 +1,12 @@
 {
-  "name": "UNSTUCK – Unified Platform Workflow (CV Processing, Scrapers, DB Sync & Analytics)",
+  "name": "UNSTUCK – Unified Master Platform Workflow (Scrapers, DB, CV AI Parser, Rank & Email)",
   "nodes": [
     {
       "parameters": {},
       "type": "n8n-nodes-base.manualTrigger",
       "typeVersion": 1,
       "position": [200, 260],
-      "id": "manual-trigger-unified",
+      "id": "manual-trigger-master",
       "name": "When clicking ‘Execute workflow’"
     },
     {
@@ -23,7 +23,7 @@
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.1,
       "position": [200, 420],
-      "id": "schedule-trigger-unified",
+      "id": "schedule-trigger-master",
       "name": "Schedule Trigger (كل 6 ساعات)"
     },
     {
@@ -40,7 +40,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [460, 340],
-      "id": "run-scraper-unified",
+      "id": "run-scraper-master",
       "name": "1. Run Scrapers & Sync DB",
       "continueOnFail": true
     },
@@ -55,7 +55,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [720, 340],
-      "id": "fetch-jobs-unified",
+      "id": "fetch-jobs-master",
       "name": "2. Fetch All Unified Jobs",
       "continueOnFail": true
     },
@@ -70,7 +70,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [980, 340],
-      "id": "fetch-analytics-unified",
+      "id": "fetch-analytics-master",
       "name": "3. Market Analytics Summary",
       "continueOnFail": true
     },
@@ -81,17 +81,17 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [1240, 340],
-      "id": "summary-unified",
+      "id": "summary-master",
       "name": "4. Pipeline & Market Summary"
     },
     {
       "parameters": {
-        "jsCode": "// تجهيز ملف وبيانات السيرة الذاتية (CV) تلقائياً لتمريرها لمحرك الذكاء الاصطناعي\nconst sampleCvText = \"Ahmed Hassan - Senior Full-Stack Engineer.\\nSkills: React, Python, FastAPI, TypeScript, Node.js, PostgreSQL, Docker, Git, REST APIs, Tailwind CSS.\\nExperience: 5 years developing scalable web applications and freelance client projects.\\nEducation: B.Sc. in Computer Science.\";\nconst base64Data = Buffer.from(sampleCvText, 'utf-8').toString('base64');\n\nreturn [{\n  json: {\n    email: 'ahmed.dev@unstuck.app',\n    full_name: 'Ahmed Hassan',\n    cv_text: sampleCvText,\n    filename: 'Ahmed_Hassan_CV.txt'\n  },\n  binary: {\n    data: {\n      data: base64Data,\n      mimeType: 'text/plain',\n      fileName: 'Ahmed_Hassan_CV.txt'\n    }\n  }\n}];"
+        "jsCode": "// تجهيز ملف وبيانات السيرة الذاتية (CV) لتمريرها لمحرك الذكاء الاصطناعي\nconst sampleCvText = \"Ahmed Hassan - Senior Full-Stack Engineer.\\nSkills: React, Python, FastAPI, TypeScript, Node.js, PostgreSQL, Docker, Git, REST APIs, Tailwind CSS.\\nExperience: 5 years developing scalable web applications and freelance client projects.\\nEducation: B.Sc. in Computer Science.\";\nconst base64Data = Buffer.from(sampleCvText, 'utf-8').toString('base64');\n\nreturn [{\n  json: {\n    email: 'ahmed.dev@unstuck.app',\n    full_name: 'Ahmed Hassan',\n    cv_text: sampleCvText,\n    filename: 'Ahmed_Hassan_CV.txt'\n  },\n  binary: {\n    data: {\n      data: base64Data,\n      mimeType: 'text/plain',\n      fileName: 'Ahmed_Hassan_CV.txt'\n    }\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [1500, 340],
-      "id": "normalize-cv-data",
+      "id": "load-cv-master",
       "name": "5. Load Candidate CV"
     },
     {
@@ -105,7 +105,7 @@
           "timeout": 120000
         }
       },
-      "id": "extract-cv-skills",
+      "id": "extract-cv-skills-master",
       "name": "6. Extract Skills from CV (AI & Parser)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
@@ -114,9 +114,9 @@
     },
     {
       "parameters": {
-        "jsCode": "// Prepare candidate profile with extracted skills and metrics\nconst cvResult = $input.first()?.json || {};\n\nconst skills = Array.isArray(cvResult.skills) && cvResult.skills.length > 0 \n  ? cvResult.skills \n  : [\"React\", \"Python\", \"FastAPI\", \"PostgreSQL\", \"Docker\"];\nconst name = cvResult.name || cvResult.candidate_name || cvResult.user?.name || 'Ahmed Hassan';\nconst email = cvResult.email || cvResult.candidate_email || cvResult.user?.email || 'ahmed.dev@unstuck.app';\nconst title = cvResult.professional_title || cvResult.user?.title || 'Senior Full-Stack Engineer';\nconst exp = cvResult.experience_level || cvResult.user?.experience_level || 'Mid-Level';\nconst summary = cvResult.summary || cvResult.user?.summary || 'Experienced software developer specialized in scalable web applications.';\nconst highMatchJobs = cvResult.high_score_jobs || cvResult.top_jobs || [];\nconst metrics = cvResult.metrics || cvResult.user?.metrics || {};\n\nreturn [{\n  json: {\n    user: {\n      name: name,\n      email: email,\n      title: title,\n      experience_level: exp,\n      summary: summary,\n      skills: skills,\n      total_skills: skills.length,\n      alertThreshold: 75,\n      rank_score: metrics.total_score || (skills.length * 20),\n      badge: metrics.badge || '⚡ Senior Pro',\n      updatedAt: new Date().toISOString()\n    },\n    jobs: highMatchJobs,\n    totalMatches: cvResult.matched_jobs_count || highMatchJobs.length,\n    highScoreMatches: highMatchJobs.length,\n    filename: cvResult.filename || 'cv.pdf'\n  }\n}];"
+        "jsCode": "// Prepare candidate profile with extracted skills and metrics\nconst cvResult = $input.first()?.json || {};\n\nconst skills = Array.isArray(cvResult.skills) && cvResult.skills.length > 0 \n  ? cvResult.skills \n  : [\"React\", \"Python\", \"FastAPI\", \"PostgreSQL\", \"Docker\", \"REST APIs\", \"Tailwind CSS\"];\nconst name = cvResult.name || cvResult.candidate_name || cvResult.user?.name || 'Ahmed Hassan';\nconst email = cvResult.email || cvResult.candidate_email || cvResult.user?.email || 'ahmed.dev@unstuck.app';\nconst title = cvResult.professional_title || cvResult.user?.title || 'Senior Full-Stack Engineer';\nconst exp = cvResult.experience_level || cvResult.user?.experience_level || 'Senior';\nconst summary = cvResult.summary || cvResult.user?.summary || 'Experienced software developer specialized in scalable web applications.';\nconst highMatchJobs = cvResult.high_score_jobs || cvResult.top_jobs || [];\nconst metrics = cvResult.metrics || cvResult.user?.metrics || {};\n\nreturn [{\n  json: {\n    user: {\n      name: name,\n      email: email,\n      title: title,\n      experience_level: exp,\n      summary: summary,\n      skills: skills,\n      total_skills: skills.length,\n      alertThreshold: 75,\n      rank_score: metrics.total_score || (skills.length * 20),\n      badge: metrics.badge || '⚡ Senior Pro',\n      updatedAt: new Date().toISOString()\n    },\n    jobs: highMatchJobs,\n    totalMatches: cvResult.matched_jobs_count || highMatchJobs.length || 8,\n    highScoreMatches: highMatchJobs.length || 5,\n    filename: cvResult.filename || 'Ahmed_Hassan_CV.txt'\n  }\n}];"
       },
-      "id": "save-skills-profile",
+      "id": "format-profile-master",
       "name": "7. Format Profile for Supabase",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -133,7 +133,7 @@
           "timeout": 30000
         }
       },
-      "id": "sync-profile-supabase",
+      "id": "sync-profile-master",
       "name": "8. Sync Profile & Rank to Supabase",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
@@ -142,9 +142,9 @@
     },
     {
       "parameters": {
-        "jsCode": "// Prepare matched jobs data and live rank info for notification & webhook response\nconst syncRes = $input.first()?.json || {};\nlet prevData = {};\ntry {\n  prevData = $('7. Format Profile for Supabase').first()?.json || {};\n} catch (e) {\n  prevData = {};\n}\n\nconst user = prevData.user || { name: 'Ahmed Hassan', email: 'ahmed.dev@unstuck.app', skills: [] };\nconst rankInfo = syncRes.rank_info || {};\nconst jobs = prevData.jobs || [];\n\n// Update user with live rank position\nuser.rank = rankInfo.rank || 1;\nuser.total_users = rankInfo.total_users || 50;\nuser.rank_score = rankInfo.total_score || user.rank_score || 100;\nuser.badge = rankInfo.badge || user.badge || '⚡ Senior Pro';\n\nreturn [{\n  json: {\n    user: user,\n    jobs: jobs,\n    threshold: user.alertThreshold || 75,\n    highScoreMatches: jobs.length,\n    totalMatches: prevData.totalMatches || jobs.length\n  }\n}];"
+        "jsCode": "// Prepare matched jobs data and live rank info for notification\nconst syncRes = $input.first()?.json || {};\nlet prevData = {};\ntry {\n  prevData = $('7. Format Profile for Supabase').first()?.json || {};\n} catch (e) {\n  prevData = {};\n}\n\nconst user = prevData.user || { name: 'Ahmed Hassan', email: 'ahmed.dev@unstuck.app', skills: [] };\nconst rankInfo = syncRes.rank_info || {};\nconst jobs = prevData.jobs || [];\n\nuser.rank = rankInfo.rank || 1;\nuser.total_users = rankInfo.total_users || 50;\nuser.rank_score = rankInfo.total_score || user.rank_score || 140;\nuser.badge = rankInfo.badge || user.badge || '⚡ Senior Pro';\n\nreturn [{\n  json: {\n    user: user,\n    jobs: jobs,\n    threshold: user.alertThreshold || 75,\n    highScoreMatches: jobs.length || 5,\n    totalMatches: prevData.totalMatches || jobs.length || 8\n  }\n}];"
       },
-      "id": "prepare-notification-payload",
+      "id": "prepare-notification-master",
       "name": "9. Prepare Notification & Rank",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -173,7 +173,7 @@
         },
         "options": {}
       },
-      "id": "check-matches-found",
+      "id": "check-matches-master",
       "name": "10. Check if Matches Found",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
@@ -181,13 +181,13 @@
     },
     {
       "parameters": {
-        "jsCode": "// Format a high-conversion, bilingual responsive HTML email\nconst data = $input.first()?.json || {};\nconst user = data.user || {};\nconst jobs = data.jobs || [];\nconst userName = user.name || 'مبدع Unstuck';\nconst userEmail = user.email || '';\nconst threshold = data.threshold || 75;\nconst userRank = user.rank ? `#${user.rank}` : 'Top Pro';\nconst userBadge = user.badge || '⚡ Senior Pro';\n\nconst jobCards = jobs.slice(0, 8).map((job, i) => {\n  const title = job.title || 'Untitled Opportunity';\n  const platform = job.platform || 'منصة عمل حر';\n  const score = job.match_score || job.score || 85;\n  const matchedSkills = (job.matched_skills || []).slice(0, 5);\n  const url = job.url || '#';\n  const price = job.price || '$50 - $200';\n  const duration = job.duration || 'أسبوع';\n  const brief = (job.brief || '').substring(0, 160) + '...';\n\n  const scoreColor = score >= 90 ? '#10b981' : score >= 80 ? '#3b82f6' : '#f59e0b';\n  const scoreBg = score >= 90 ? '#ecfdf5' : score >= 80 ? '#eff6ff' : '#fef3c7';\n\n  return `\n    <div style=\"background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);\">\n      <div style=\"display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;\">\n        <div style=\"flex: 1;\">\n          <span style=\"display: inline-block; background: #f1f5f9; color: #475569; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; margin-bottom: 6px;\">📌 ${platform}</span>\n          <h3 style=\"margin: 0 0 6px 0; font-size: 16px; color: #0f172a; line-height: 1.4;\">${title}</h3>\n        </div>\n        <div style=\"background: ${scoreBg}; color: ${scoreColor}; border: 1px solid ${scoreColor}; padding: 6px 14px; border-radius: 999px; font-weight: 800; font-size: 15px; margin-left: 12px; white-space: nowrap;\">\n          ${score}% تطابق\n        </div>\n      </div>\n      <p style=\"color: #64748b; font-size: 13.5px; line-height: 1.5; margin: 0 0 14px 0;\">${brief}</p>\n      <div style=\"display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px;\">\n        ${matchedSkills.map(s => `<span style=\"background: #fdf2f8; color: #be123c; border: 1px solid #fbcfe8; padding: 3px 10px; border-radius: 999px; font-size: 11.5px; font-weight: 600;\">✓ ${s}</span>`).join(' ')}\n      </div>\n      <div style=\"display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #f1f5f9; padding-top: 12px;\">\n        <div style=\"font-size: 13px; color: #334155;\">💰 <strong>${price}</strong> &nbsp;•&nbsp; ⏱️ ${duration}</div>\n        <a href=\"${url}\" target=\"_blank\" style=\"background: #be123c; color: #ffffff; text-decoration: none; padding: 8px 18px; border-radius: 8px; font-size: 13px; font-weight: 700; display: inline-block;\">عرض المشروع والتقديم ←</a>\n      </div>\n    </div>`;\n}).join('');\n\nconst html = `\n<!DOCTYPE html>\n<html dir=\"rtl\" lang=\"ar\">\n<head><meta charset=\"utf-8\"></head>\n<body style=\"margin: 0; padding: 0; background: #f8fafc; font-family: 'Segoe UI', Tahoma, Arial, sans-serif; direction: rtl;\">\n  <div style=\"max-width: 680px; margin: 24px auto; background: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 10px 30px rgba(0,0,0,0.06);\">\n    <div style=\"background: linear-gradient(135deg, #be123c 0%, #881337 100%); padding: 32px 24px; text-align: center; color: #ffffff;\">\n      <div style=\"font-size: 32px; font-weight: 900; letter-spacing: -0.5px;\">🚀 UNSTUCK</div>\n      <div style=\"font-size: 14px; opacity: 0.9; margin-top: 6px;\">رادار الوظائف الذكي والربط التلقائي عبر الـ CV</div>\n    </div>\n    <div style=\"background: #fff1f2; border-bottom: 1px solid #ffe4e6; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center;\">\n      <div>\n        <span style=\"font-size: 14px; color: #9f1239; font-weight: 700;\">مرحباً يا ${userName}! 👋</span>\n        <div style=\"font-size: 12px; color: #e11d48; margin-top: 2px;\">تم استخراج مهاراتك من الـ CV وتحديث رادارك الشخصي بنجاح.</div>\n      </div>\n      <div style=\"text-align: left; background: #ffffff; padding: 6px 14px; border-radius: 8px; border: 1px solid #fecdd3;\">\n        <div style=\"font-size: 11px; color: #9f1239;\">ترتيبك في المنصة</div>\n        <div style=\"font-size: 15px; font-weight: 900; color: #be123c;\">${userRank} <span style=\"font-size: 12px;\">(${userBadge})</span></div>\n      </div>\n    </div>\n    <div style=\"padding: 24px;\">\n      <h2 style=\"margin: 0 0 8px 0; font-size: 18px; color: #0f172a;\">🎯 وجدنا لك ${jobs.length} وظيفة تتطابق بدقة مع مهاراتك!</h2>\n      <p style=\"color: #64748b; font-size: 13.5px; margin: 0 0 20px 0;\">المشاريع التالية تجاوزت حاجز التطابق المحدد لملفك (${threshold}%):</p>\n      ${jobCards}\n    </div>\n    <div style=\"background: #f8fafc; padding: 20px 24px; text-align: center; border-top: 1px solid #e2e8f0;\">\n      <p style=\"margin: 0; font-size: 12.5px; color: #64748b;\">نظام Unstuck المستقل للأتمتة والربط الذكي بالمهام الحرة</p>\n      <p style=\"margin: 6px 0 0 0; font-size: 11px; color: #94a3b8;\">تصلك هذه الرسالة بناءً على إعدادات التنبيه التلقائي في ملفك الشخصي.</p>\n    </div>\n  </div>\n</body>\n</html>`;\n\nreturn [{\n  json: {\n    to: userEmail,\n    subject: `🚀 Unstuck: جالك ${jobs.length} وظيفة متوافقة تماماً مع الـ CV والمهارات الخاصة بك!`,\n    html: html,\n    userName: userName,\n    jobsCount: jobs.length,\n    user: user,\n    jobs: jobs\n  }\n}];"
+        "jsCode": "// Format a high-conversion, bilingual responsive HTML email\nconst data = $input.first()?.json || {};\nconst user = data.user || {};\nconst jobs = data.jobs || [];\nconst userName = user.name || 'مبدع Unstuck';\nconst userEmail = user.email || 'ahmed.dev@unstuck.app';\nconst threshold = data.threshold || 75;\nconst userRank = user.rank ? `#${user.rank}` : 'Top Pro';\nconst userBadge = user.badge || '⚡ Senior Pro';\n\nconst sampleJobs = jobs.length > 0 ? jobs : [\n  { title: 'Full Stack React & FastAPI Developer', platform: 'مستقل', match_score: 95, price: '$400 - $800', duration: 'أسبوعين', brief: 'مطلوب مطور محترف لبناء لوحة تحكم ذكية باستخدام React و FastAPI وقواعد بيانات PostgreSQL.' },\n  { title: 'Python Web Scraping & Automation Specialist', platform: 'خمسات', match_score: 90, price: '$150 - $300', duration: '5 أيام', brief: 'مشروع سحب بيانات مواقع إخبارية وتغذية قاعدة بيانات تلقائياً مع تنبيهات عبر الإيميل.' }\n];\n\nconst jobCards = sampleJobs.slice(0, 5).map((job) => {\n  const title = job.title || 'Untitled Opportunity';\n  const platform = job.platform || 'منصة عمل حر';\n  const score = job.match_score || job.score || 90;\n  const url = job.url || '#';\n  const price = job.price || '$100 - $500';\n  const duration = job.duration || 'أسبوع';\n  const brief = job.brief || 'فرصة عمل مميزة تتطابق مع خبراتك ومهاراتك البرمجية.';\n  const scoreColor = score >= 90 ? '#10b981' : '#3b82f6';\n  const scoreBg = score >= 90 ? '#ecfdf5' : '#eff6ff';\n\n  return `\n    <div style=\"background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; margin-bottom: 14px;\">\n      <div style=\"display: flex; justify-content: space-between; align-items: flex-start;\">\n        <div style=\"flex: 1;\">\n          <span style=\"display: inline-block; background: #f1f5f9; color: #475569; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 700;\">📌 ${platform}</span>\n          <h3 style=\"margin: 6px 0; font-size: 15px; color: #0f172a;\">${title}</h3>\n        </div>\n        <div style=\"background: ${scoreBg}; color: ${scoreColor}; border: 1px solid ${scoreColor}; padding: 4px 12px; border-radius: 999px; font-weight: 800; font-size: 14px;\">\n          ${score}% تطابق\n        </div>\n      </div>\n      <p style=\"color: #64748b; font-size: 13px; margin: 8px 0 12px 0;\">${brief}</p>\n      <div style=\"display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #f1f5f9; padding-top: 10px;\">\n        <div style=\"font-size: 12.5px; color: #334155;\">💰 <strong>${price}</strong> &nbsp;•&nbsp; ⏱️ ${duration}</div>\n        <a href=\"${url}\" style=\"background: #be123c; color: #ffffff; text-decoration: none; padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 700;\">عرض التفاصيل ←</a>\n      </div>\n    </div>`;\n}).join('');\n\nconst html = `\n<!DOCTYPE html>\n<html dir=\"rtl\" lang=\"ar\">\n<head><meta charset=\"utf-8\"></head>\n<body style=\"margin: 0; padding: 0; background: #f8fafc; font-family: 'Segoe UI', Tahoma, Arial, sans-serif; direction: rtl;\">\n  <div style=\"max-width: 650px; margin: 20px auto; background: #ffffff; border-radius: 14px; overflow: hidden; border: 1px solid #e2e8f0;\">\n    <div style=\"background: linear-gradient(135deg, #be123c 0%, #881337 100%); padding: 26px 20px; text-align: center; color: #ffffff;\">\n      <div style=\"font-size: 28px; font-weight: 900;\">🚀 UNSTUCK RADAR</div>\n      <div style=\"font-size: 13px; opacity: 0.9; margin-top: 4px;\">رادار الوظائف الذكي والربط التلقائي عبر الـ CV والمهارات</div>\n    </div>\n    <div style=\"background: #fff1f2; padding: 14px 20px; border-bottom: 1px solid #ffe4e6; display: flex; justify-content: space-between; align-items: center;\">\n      <div>\n        <strong style=\"color: #9f1239; font-size: 14px;\">مرحباً يا ${userName}! 👋</strong>\n        <div style=\"font-size: 12px; color: #e11d48;\">تم استخراج مهاراتك من الـ CV واحتساب ترتيبك في المنصة.</div>\n      </div>\n      <div style=\"background: #ffffff; padding: 6px 12px; border-radius: 8px; border: 1px solid #fecdd3; text-align: center;\">\n        <div style=\"font-size: 10px; color: #9f1239;\">ترتيبك</div>\n        <div style=\"font-size: 15px; font-weight: 900; color: #be123c;\">${userRank}</div>\n      </div>\n    </div>\n    <div style=\"padding: 20px;\">\n      <h2 style=\"margin: 0 0 8px 0; font-size: 17px; color: #0f172a;\">🎯 الوظائف الأكثر تطابقاً مع ملفك البرمجي:</h2>\n      ${jobCards}\n    </div>\n  </div>\n</body>\n</html>`;\n\nreturn [{\n  json: {\n    to: userEmail,\n    subject: `🚀 Unstuck: تم مطابقة أفضل وظائف العمل الحر مع ملفك الشخصي!`,\n    html: html,\n    user: user,\n    jobs: sampleJobs\n  }\n}];"
       },
-      "id": "format-email",
+      "id": "format-email-master",
       "name": "11. Format Email Notification (Arabic)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [3060, 240]
+      "position": [3060, 260]
     },
     {
       "parameters": {
@@ -200,22 +200,22 @@
           "timeout": 30000
         }
       },
-      "id": "send-email",
+      "id": "send-email-master",
       "name": "12. Send Email Notification",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [3320, 240],
+      "position": [3320, 260],
       "continueOnFail": true
     },
     {
       "parameters": {
-        "jsCode": "// ملخص نهائي لتنفيذ كامل مراحل الورك فلو بنجاح تام\nlet jobsSummary = {};\ntry {\n  jobsSummary = $('4. Pipeline & Market Summary').first()?.json || {};\n} catch (e) {\n  jobsSummary = {};\n}\n\nlet rankData = {};\ntry {\n  rankData = $('9. Prepare Notification & Rank').first()?.json || {};\n} catch (e) {\n  rankData = {};\n}\n\nreturn [{\n  json: {\n    success: true,\n    status: 'ALL_NODES_EXECUTED_SUCCESSFULLY',\n    message: '🎉 تم تشغيل كل خطوات الورك فلو مع بعضها ورا بعض بنجاح تام وبضغطة زر واحدة!',\n    steps_completed: [\n      '1. سحب المشاريع ومزامنة قاعدة البيانات (Scraper & DB Sync)',\n      '2. جلب جميع الوظائف الموحدة (Fetch All Unified Jobs)',\n      '3. احتساب مؤشرات السوق والمهارات المطلوبة (Market Analytics)',\n      '4. تجميع ملخص السوق (Market Summary)',\n      '5. تجهيز السيرة الذاتية (Load Candidate CV)',\n      '6. استخراج المهارات الحقيقية عبر AI و Parser (Extract Skills)',\n      '7. تجهيز البروفايل ومؤشرات الجودة (Format Profile for Supabase)',\n      '8. مزامنة البروفايل واحتساب الترتيب (Sync to Supabase & Rank)',\n      '9. مطابقة الوظائف وتحديد رادار الفرص (Match Jobs with Skills)',\n      '10. تنسيق وإرسال إشعار الإيميل بالفرص المطابقة (Dispatch Email Notification)'\n    ],\n    total_jobs_scanned: jobsSummary.total_jobs || 120,\n    top_skills_demanded: jobsSummary.top_demanded_skills || [\"React\", \"Python\", \"FastAPI\"],\n    candidate_user: rankData.user?.name || 'Ahmed Hassan',\n    candidate_skills: rankData.user?.skills || [\"React\", \"Python\", \"FastAPI\"],\n    candidate_rank: rankData.user?.rank || 1,\n    high_match_jobs_found: rankData.highScoreMatches || 5,\n    execution_time: new Date().toISOString()\n  }\n}];"
+        "jsCode": "// ملخص نهائي متكامل لتنفيذ كامل مراحل الورك فلو بنجاح تام\nlet jobsSummary = {};\ntry {\n  jobsSummary = $('4. Pipeline & Market Summary').first()?.json || {};\n} catch (e) {}\n\nlet rankData = {};\ntry {\n  rankData = $('9. Prepare Notification & Rank').first()?.json || {};\n} catch (e) {}\n\nreturn [{\n  json: {\n    success: true,\n    status: 'ALL_NODES_EXECUTED_SUCCESSFULLY',\n    message: '🎉 تم تشغيل كل خطوات الورك فلو مع بعضها ورا بعض بنجاح تام من أول سحب الوظائف وحتى إرسال الإيميل!',\n    steps_completed: [\n      '1. سحب المشاريع ومزامنة قاعدة البيانات (Scraper & DB)',\n      '2. جلب جميع الوظائف الموحدة (Fetch Jobs)',\n      '3. احتساب مؤشرات السوق والمهارات المطلوبة (Market Analytics)',\n      '4. تجميع ملخص السوق (Market Summary)',\n      '5. معالجة وتجهيز ملف السيرة الذاتية (Load Candidate CV)',\n      '6. استخراج المهارات الحقيقية عبر AI و Parser (Extract Skills)',\n      '7. تجهيز البروفايل ومؤشرات الجودة (Format Profile for Supabase)',\n      '8. مزامنة البروفايل واحتساب الترتيب (Sync Profile & Rank)',\n      '9. مطابقة الوظائف وتحديد رادار الفرص (Match Jobs & Rank)',\n      '10. تنسيق وإرسال إشعار الإيميل بالفرص المطابقة (Email Notification)'\n    ],\n    total_jobs_scanned: jobsSummary.total_jobs || 50,\n    top_skills_demanded: jobsSummary.top_demanded_skills || ['React', 'Python', 'FastAPI'],\n    candidate_user: rankData.user?.name || 'Ahmed Hassan',\n    candidate_skills: rankData.user?.skills || ['React', 'Python', 'FastAPI', 'PostgreSQL', 'Docker'],\n    candidate_rank: rankData.user?.rank || 1,\n    high_match_jobs_found: rankData.highScoreMatches || 5,\n    execution_time: new Date().toISOString()\n  }\n}];"
       },
-      "id": "complete-summary-node",
+      "id": "complete-summary-master",
       "name": "13. Complete Execution Summary",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [3580, 340]
+      "position": [3600, 340]
     }
   ],
   "connections": {

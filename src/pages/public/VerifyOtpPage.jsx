@@ -207,26 +207,6 @@ export function VerifyOtpPage({ email, fullName, devOtp: initialDevOtp, onVerifi
               <Mail size={14} />
               <span>{email || 'your-email@example.com'}</span>
             </div>
-
-            {devOtp && (
-              <div className="otp-dev-code-box">
-                <span className="otp-dev-badge">Development Code</span>
-                <p className="otp-dev-text">
-                  Your generated code is: <strong>{devOtp}</strong>
-                </p>
-                <button
-                  type="button"
-                  className="btn-autofill-otp"
-                  onClick={() => {
-                    const chars = devOtp.split('');
-                    setOtpDigits(chars);
-                    setErrorMessage('');
-                  }}
-                >
-                  Click to Auto-fill Code
-                </button>
-              </div>
-            )}
           </div>
 
           {/* Error Notice */}

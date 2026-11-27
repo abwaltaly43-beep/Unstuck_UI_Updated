@@ -90,15 +90,8 @@ export function SignUpPage({ onStartVerification, onNavigate }) {
       }
     } catch (err) {
       console.error('Registration request error:', err);
-      // Resilient fallback for demo mode if backend is starting or offline
       setIsLoading(false);
-      if (onStartVerification) {
-        onStartVerification({
-          email: email.trim(),
-          fullName: fullName.trim(),
-          devOtp: '123456'
-        });
-      }
+      setErrorMessage('تعذر الاتصال بسيرفر التسجيل. يرجى التأكد من تشغيل السيرفر والمحاولة مرة أخرى.');
     }
   };
 

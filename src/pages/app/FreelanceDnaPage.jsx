@@ -120,8 +120,11 @@ export function FreelanceDnaPage({
     // 1. If uploadTarget is n8n, try n8n Webhook (supports both Test mode and Active production mode)
     if (uploadTarget === 'n8n') {
       const queryParams = `?email=${encodeURIComponent(formData.email)}&full_name=${encodeURIComponent(formData.name)}`;
-      const testUrl = `http://localhost:5678/webhook-test/cv-upload${queryParams}`;
-      const prodUrl = `http://localhost:5678/webhook/cv-upload${queryParams}`;
+      const n8nHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        ? 'http://localhost:5678'
+        : `${window.location.protocol}//${window.location.hostname}:5678`;
+      const testUrl = `${n8nHost}/webhook-test/cv-upload${queryParams}`;
+      const prodUrl = `${n8nHost}/webhook/cv-upload${queryParams}`;
 
       try {
         setUploadProgressText('الاتصال بـ n8n Webhook (فحص مسار الاستماع والإنتاج)...');
