@@ -29,7 +29,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "http://host.docker.internal:8000/api/scrape?wait=true",
+        "url": "http://backend:8000/api/scrape?wait=true",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "{\n  \"platforms\": [\"all\"],\n  \"wait\": true\n}",
@@ -47,7 +47,7 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "http://host.docker.internal:8000/api/jobs?limit=500",
+        "url": "http://backend:8000/api/jobs?limit=500",
         "options": {
           "timeout": 60000
         }
@@ -62,7 +62,7 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "http://host.docker.internal:8000/api/jobs/analytics",
+        "url": "http://backend:8000/api/jobs/analytics",
         "options": {
           "timeout": 60000
         }
@@ -97,7 +97,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "http://host.docker.internal:8000/api/cv/upload?email=ahmed.dev@unstuck.app&full_name=Ahmed%20Hassan",
+        "url": "http://backend:8000/api/cv/upload?email=ahmed.dev@unstuck.app&full_name=Ahmed%20Hassan",
         "sendBody": true,
         "contentType": "binaryData",
         "inputDataFieldName": "data",
@@ -125,7 +125,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "http://host.docker.internal:8000/api/profile/update-skills",
+        "url": "http://backend:8000/api/profile/update-skills",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={\n  \"email\": {{ JSON.stringify($json.user.email) }},\n  \"full_name\": {{ JSON.stringify($json.user.name) }},\n  \"title\": {{ JSON.stringify($json.user.title) }},\n  \"experience_level\": {{ JSON.stringify($json.user.experience_level) }},\n  \"summary\": {{ JSON.stringify($json.user.summary) }},\n  \"skills\": {{ JSON.stringify($json.user.skills) }}\n}",
@@ -192,7 +192,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "http://host.docker.internal:8000/api/notify/email",
+        "url": "http://backend:8000/api/notify/email",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={\n  \"to_email\": {{ JSON.stringify($json.to) }},\n  \"subject\": {{ JSON.stringify($json.subject) }},\n  \"html_content\": {{ JSON.stringify($json.html) }}\n}",
